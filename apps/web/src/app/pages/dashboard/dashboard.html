@@ -1,0 +1,192 @@
+<section class="ui-page">
+  <header class="ui-page-head">
+    <div>
+      <p class="ui-eyebrow">Dashboard</p>
+      <h1>{{ greeting() }}, {{ firstName() }}</h1>
+      <p class="ui-sub">
+        This is an overview of {{ workspace()?.name ?? 'your workspace' }}. All numbers below are
+        sample data until the invoice backend is connected.
+      </p>
+    </div>
+    <div class="ui-actions">
+      <a class="ui-btn ui-btn-ghost" routerLink="/documents">View invoices</a>
+      <a class="ui-btn ui-btn-primary" routerLink="/invoices/new">
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.9"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        Create invoice
+      </a>
+    </div>
+  </header>
+
+  <div class="stats">
+    @for (stat of stats; track stat.label) {
+    <article class="stat-card">
+      <span class="stat-icon" [class]="'stat-icon stat-icon-' + stat.tone" aria-hidden="true">
+        @switch (stat.icon) { @case ('documents') {
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M8 3h7l4 4v10a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
+          <path d="M15 3v5h4M5 8v11a2 2 0 0 0 2 2h8" />
+        </svg>
+        } @case ('clock') {
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+        >
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 7v5l3 2" />
+        </svg>
+        } @case ('check') {
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="12" cy="12" r="9" />
+          <path d="m8 12 2.5 2.5L16 9" />
+        </svg>
+        } @default {
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M4 20h4l10-10a2.8 2.8 0 0 0-4-4L4 16v4z" />
+          <path d="m13.5 6.5 4 4" />
+        </svg>
+        } }
+      </span>
+      <div class="stat-copy">
+        <span class="stat-label">{{ stat.label }}</span>
+        <strong class="stat-value">{{ stat.value }}</strong>
+        <span class="stat-detail">{{ stat.detail }}</span>
+      </div>
+    </article>
+    }
+  </div>
+
+  <app-company-profile-card />
+
+  <div class="dashboard-grid">
+    <section class="ui-card recent" aria-labelledby="recent-heading">
+      <header class="ui-panel-head">
+        <div>
+          <h2 id="recent-heading">Recent invoices</h2>
+          <p>The last five invoices in this workspace.</p>
+        </div>
+        <a class="ui-link" routerLink="/documents">
+          View all
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="m9 6 6 6-6 6" />
+          </svg>
+        </a>
+      </header>
+
+      <div class="ui-table-wrap">
+        <table class="ui-table">
+          <thead>
+            <tr>
+              <th>Invoice</th>
+              <th>Customer</th>
+              <th>Date</th>
+              <th>Total</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (doc of recent; track doc.id) {
+            <tr>
+              <td>
+                <a class="doc-link" routerLink="/invoices/new">
+                  <span class="kind-mark" aria-hidden="true">I</span>
+                  <span>
+                    <strong>Invoice</strong>
+                    <span class="ui-muted">{{ doc.number }}</span>
+                  </span>
+                </a>
+              </td>
+              <td>{{ doc.customer }}</td>
+              <td class="date-cell">{{ formatDate(doc.issueDate) }}</td>
+              <td class="ui-money">{{ formatIdr(doc.total) }}</td>
+              <td><span [class]="statusClass(doc.status)">{{ statusLabel[doc.status] }}</span></td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <aside class="side-stack">
+      <section class="ui-card quick-card" aria-labelledby="quick-heading">
+        <header class="ui-panel-head">
+          <div>
+            <h2 id="quick-heading">New invoice</h2>
+            <p>Create a bill for a customer.</p>
+          </div>
+        </header>
+        <div class="quick-list">
+          <a class="quick-action" routerLink="/invoices/new">
+            <span class="quick-icon quick-blue" aria-hidden="true">I</span>
+            <span><strong>Create invoice</strong><small>Invoice with a due date</small></span>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="m9 6 6 6-6 6" />
+            </svg>
+          </a>
+        </div>
+      </section>
+
+      <section class="ui-card tip-card">
+        <span class="tip-mark" aria-hidden="true">↗</span>
+        <div>
+          <h2>Clean invoices</h2>
+          <p>
+            Review items, tax, and due dates before sending. Clear invoices help customers pay on
+            time.
+          </p>
+          <a class="ui-link" routerLink="/documents">Open my invoices</a>
+        </div>
+      </section>
+    </aside>
+  </div>
+</section>

@@ -1,0 +1,50 @@
+<main class="auth-page">
+  <div class="auth-grid" aria-hidden="true"></div>
+
+  <div class="auth-decor" aria-hidden="true">
+    <div class="decor-chip decor-tl">
+      <span class="decor-dot"></span>
+      <div><strong>Invoice</strong><span>INV/2026/0043</span></div>
+    </div>
+    <div class="decor-chip decor-bl">
+      <span class="decor-dot decor-dot-green"></span>
+      <div><strong>Status</strong><span>Sent</span></div>
+    </div>
+    <div class="decor-chip decor-tr">
+      <span class="decor-dot decor-dot-violet"></span>
+      <div><strong>Paid</strong><span>IDR 8.2m</span></div>
+    </div>
+    <div class="decor-chip decor-br">
+      <span class="decor-dot decor-dot-amber"></span>
+      <div><strong>Invoice</strong><span>5 invoices</span></div>
+    </div>
+  </div>
+
+  <div class="auth-center">
+    <a class="auth-brand" routerLink="/" aria-label="Rumindium Invoice home">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 30 30" fill="none" focusable="false">
+          <rect x="5" y="5" width="8" height="8" rx="2.2" fill="currentColor" />
+          <rect x="17" y="17" width="8" height="8" rx="2.2" fill="currentColor" opacity="0.65" />
+          <path
+            d="M13 9h3.5A3.5 3.5 0 0 1 20 12.5V17"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+        </svg>
+      </span>
+      <span class="brand-words"><strong>Rumindium</strong><span>Invoice</span></span>
+    </a>
+
+    <section class="auth-card">
+      <ng-content />
+    </section>
+
+    <p class="auth-legal">
+      <a routerLink="/">Back to home</a>
+      <span aria-hidden="true">·</span>
+      <span>Your data is stored in a personal workspace.</span>
+    </p>
+  </div>
+</main>

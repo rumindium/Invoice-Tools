@@ -1,0 +1,118 @@
+<section class="ui-card company-card" aria-labelledby="company-profile-heading">
+  <header class="company-head">
+    <div>
+      <p class="company-eyebrow">Company profile</p>
+      <h2 id="company-profile-heading">Seller details</h2>
+      <p>Complete the information that will appear on invoices and company documents.</p>
+    </div>
+    <span class="local-badge">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        aria-hidden="true"
+      >
+        <path d="M4 7h16v12H4zM8 7V5h8v2M8 12h8" />
+      </svg>
+      Local
+    </span>
+  </header>
+
+  <div class="company-body">
+    <div class="logo-panel">
+      <div class="logo-frame">
+        <img [src]="logoPreview() || defaultLogo" alt="Company logo" />
+      </div>
+
+      <input
+        #logoInput
+        class="logo-input"
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        (change)="onLogoSelected($event)"
+      />
+      <button class="logo-button" type="button" (click)="logoInput.click()">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M12 16V4M8 8l4-4 4 4M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4" />
+        </svg>
+        {{ logoPreview() ? 'Change logo' : 'Choose logo' }}
+      </button>
+
+      @if (logoPreview()) {
+      <button class="logo-remove" type="button" (click)="removeLogo()">Remove logo</button>
+      }
+
+      <p class="logo-hint">PNG, JPG, or WebP · max 1.5 MB</p>
+      @if (logoError()) {
+      <p class="logo-error" role="alert">{{ logoError() }}</p>
+      }
+    </div>
+
+    <form class="company-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="company-fields">
+        <label class="ui-field">
+          <span>Company name</span>
+          <input
+            class="ui-input"
+            formControlName="companyName"
+            placeholder="Acme Studio"
+            autocomplete="organization"
+          />
+          @if (form.controls.companyName.invalid && form.controls.companyName.touched) {
+          <small class="ui-field-error">Company name is required.</small>
+          }
+        </label>
+
+        <label class="ui-field">
+          <span>Phone number</span>
+          <input
+            class="ui-input"
+            type="tel"
+            formControlName="phone"
+            placeholder="+62 21 555 0123"
+            autocomplete="tel"
+          />
+          @if (form.controls.phone.invalid && form.controls.phone.touched) {
+          <small class="ui-field-error">Phone number is required.</small>
+          }
+        </label>
+
+        <label class="ui-field field-wide">
+          <span>Address</span>
+          <textarea
+            class="ui-textarea"
+            formControlName="address"
+            rows="2"
+            placeholder="Full company address"
+          ></textarea>
+          @if (form.controls.address.invalid && form.controls.address.touched) {
+          <small class="ui-field-error">Address is required.</small>
+          }
+        </label>
+      </div>
+
+      @if (saveError()) {
+      <p class="profile-message profile-message-error" role="alert">{{ saveError() }}</p>
+      } @if (saved()) {
+      <p class="profile-message profile-message-success" role="status">
+        Company profile saved locally.
+      </p>
+      }
+
+      <div class="company-actions">
+        <button class="ui-btn ui-btn-primary" type="submit">Save profile</button>
+        <span>Saved in this browser, not the cloud.</span>
+      </div>
+    </form>
+  </div>
+</section>

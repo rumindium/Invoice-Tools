@@ -1,0 +1,180 @@
+<div class="app-shell">
+  <aside class="sidebar" [class.is-open]="navOpen()" id="primary-navigation">
+    <div class="sidebar-brand">
+      <a class="brand" routerLink="/dashboard" (click)="closeNav()" aria-label="Rumindium Invoice">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 30 30" fill="none" focusable="false">
+            <rect x="5" y="5" width="8" height="8" rx="2.2" fill="currentColor" />
+            <rect x="17" y="17" width="8" height="8" rx="2.2" fill="currentColor" opacity="0.65" />
+            <path
+              d="M13 9h3.5A3.5 3.5 0 0 1 20 12.5V17"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            />
+          </svg>
+        </span>
+        <span class="brand-words"><strong>Rumindium</strong><span>Invoice</span></span>
+      </a>
+      <button
+        class="icon-button sidebar-close"
+        type="button"
+        aria-label="Close navigation"
+        (click)="closeNav()"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+        >
+          <path d="m6 6 12 12M18 6 6 18" />
+        </svg>
+      </button>
+    </div>
+
+    <a class="sidebar-create" routerLink="/invoices/new" (click)="closeNav()">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+      >
+        <path d="M12 5v14M5 12h14" />
+      </svg>
+      Create invoice
+    </a>
+
+    <nav class="nav" aria-label="Main navigation">
+      <span class="nav-label">Workspace</span>
+      <a
+        class="nav-item"
+        routerLink="/dashboard"
+        routerLinkActive="is-active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        (click)="closeNav()"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="m3 10 9-7 9 7" />
+          <path d="M5 9v11h14V9M9 20v-6h6v6" />
+        </svg>
+        Dashboard
+      </a>
+      <a class="nav-item" routerLink="/documents" routerLinkActive="is-active" (click)="closeNav()">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M8 3h7l4 4v10a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
+          <path d="M15 3v5h4M5 8v11a2 2 0 0 0 2 2h8" />
+        </svg>
+        My Invoices
+        <span class="nav-count">{{ invoiceCount }}</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="workspace-chip">
+        <span class="workspace-icon" aria-hidden="true">{{ initials().slice(0, 1) }}</span>
+        <div>
+          <strong>{{ workspace()?.name ?? 'Workspace' }}</strong>
+          <span>Personal workspace</span>
+        </div>
+      </div>
+
+      <div class="account">
+        <span class="avatar" aria-hidden="true">{{ initials() }}</span>
+        <div class="account-meta">
+          <strong>{{ user()?.displayName ?? 'User' }}</strong>
+          <span>{{ user()?.email }}</span>
+        </div>
+        <button
+          class="icon-button account-logout"
+          type="button"
+          title="Log out"
+          aria-label="Log out"
+          (click)="logout()"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M10 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h5M15 8l4 4-4 4M19 12H9" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  @if (navOpen()) {
+  <button
+    class="nav-scrim"
+    type="button"
+    aria-label="Close navigation"
+    (click)="closeNav()"
+  ></button>
+  }
+
+  <div class="shell-main">
+    <header class="topbar">
+      <button
+        class="icon-button topbar-menu"
+        type="button"
+        aria-label="Open navigation"
+        aria-controls="primary-navigation"
+        [attr.aria-expanded]="navOpen()"
+        (click)="toggleNav()"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+        >
+          <path d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <span>Workspace</span>
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+        >
+          <path d="m9 6 6 6-6 6" />
+        </svg>
+        <strong>{{ pageTitle() }}</strong>
+      </nav>
+
+      <div class="topbar-meta">
+        <span>{{ today }}</span>
+        <span class="avatar avatar-small" aria-hidden="true">{{ initials() }}</span>
+      </div>
+    </header>
+
+    <main class="shell-content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

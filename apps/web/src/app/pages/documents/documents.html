@@ -1,0 +1,145 @@
+<section class="ui-page">
+  <header class="ui-page-head">
+    <div>
+      <p class="ui-eyebrow">Invoice</p>
+      <h1>My invoices</h1>
+      <p class="ui-sub">
+        All invoices in one place. This list still uses sample data until the invoice backend is
+        connected.
+      </p>
+    </div>
+    <div class="ui-actions">
+      <a class="ui-btn ui-btn-primary" routerLink="/invoices/new">
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.9"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        Create invoice
+      </a>
+    </div>
+  </header>
+
+  <section class="ui-card documents-card" aria-labelledby="documents-heading">
+    <div class="documents-toolbar">
+      <span class="toolbar-title">Invoice list</span>
+
+      <label class="search-box">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <circle cx="11" cy="11" r="6.5" />
+          <path d="m16 16 4 4" />
+        </svg>
+        <input
+          type="search"
+          placeholder="Search by number or customer…"
+          [value]="search()"
+          (input)="updateSearch($event)"
+          aria-label="Search invoices"
+        />
+        @if (search()) {
+        <button
+          class="search-clear"
+          type="button"
+          aria-label="Clear search"
+          (click)="clearSearch()"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="m6 6 12 12M18 6 6 18" />
+          </svg>
+        </button>
+        }
+      </label>
+    </div>
+
+    <div class="documents-meta">
+      <span id="documents-heading">
+        {{ filtered().length }} invoice{{ filtered().length === 1 ? '' : 's' }} @if (search()) { for
+        “{{ search() }}” }
+      </span>
+      <span class="documents-hint">Sample data · not connected to a backend</span>
+    </div>
+
+    @if (filtered().length === 0) {
+    <div class="ui-empty">
+      <strong>No matching invoices</strong>
+      <p>Try another keyword or reset the search.</p>
+      <button class="ui-btn ui-btn-ghost" type="button" (click)="clearSearch()">
+        Reset search
+      </button>
+    </div>
+    } @else {
+    <div class="ui-table-wrap">
+      <table class="ui-table documents-table">
+        <thead>
+          <tr>
+            <th>Invoice</th>
+            <th>Customer</th>
+            <th>Date</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th><span class="sr-only">Action</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (doc of filtered(); track doc.id) {
+          <tr>
+            <td>
+              <span class="doc-cell">
+                <span class="kind-mark" aria-hidden="true">I</span>
+                <span>
+                  <strong>Invoice</strong>
+                  <span class="ui-muted">{{ doc.number }}</span>
+                </span>
+              </span>
+            </td>
+            <td>{{ doc.customer }}</td>
+            <td class="date-cell">{{ formatDate(doc.issueDate) }}</td>
+            <td class="ui-money">{{ formatIdr(doc.total) }}</td>
+            <td><span [class]="statusClass(doc.status)">{{ statusLabel[doc.status] }}</span></td>
+            <td class="row-action">
+              <a
+                class="row-link"
+                routerLink="/invoices/new"
+                [attr.aria-label]="'Open ' + doc.number"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="m9 6 6 6-6 6" />
+                </svg>
+              </a>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+  </section>
+</section>
