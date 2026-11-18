@@ -12,7 +12,8 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently --names api,web --prefix-colors blue,green \"npm run dev:api\" \"npm run dev:web\"",
+    "dev": "concurrently --names mail,api,web --prefix-colors magenta,blue,green \"npm run dev:mail\" \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:mail": "node scripts/dev-mailpit.mjs",
     "dev:api": "npm run start:dev --workspace @rumindium/api",
     "dev:web": "npm run start --workspace @rumindium/web",
     "build": "npm run build --workspace @rumindium/api && npm run build --workspace @rumindium/web",

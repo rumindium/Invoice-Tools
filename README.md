@@ -3,14 +3,14 @@
 Sales-document generator for freelancers, shops, service providers and small companies: quotations (SPH), sales
 orders, delivery orders (surat jalan), invoices, receipts (kwitansi), and the adjustments that follow them.
 
-**Status: P0 scaffold.** The API and Angular app run from this repository, the Prisma schema v1 is in place, and the
-public page plus workspace shell are wired. Document features start in P1.
+**Status: P0 scaffold.** The API and Angular app run from this repository, the TypeORM schema and its migrations are
+in place, and the public page, auth flow and workspace shell (invoices, company, account) are wired.
 
 | Aspect | Decision |
 |---|---|
 | Web | Angular 22, standalone components, signals, SSR and prerendering |
 | API | NestJS 11 REST under `/api/v1` |
-| Database | PostgreSQL 16 with Prisma 6; money as `Decimal`, never floating point |
+| Database | PostgreSQL 16 with TypeORM 0.3; money as `Decimal`, never floating point |
 | Identity | Auth-Platform (OIDC / platform SSO); a local stub for development |
 | PDF | Chromium printing the application's own print route, queued in a worker |
 | Guest use | Full quotation, invoice and receipt creation without an account; drafts stay in the browser |
@@ -44,6 +44,9 @@ npm run dev
 
 The API opens its TypeORM connection at startup and retries a few times; if PostgreSQL stays unreachable the process
 exits instead of serving requests. Readiness reports the database dependency on every call.
+
+For the full walkthrough — PostgreSQL setup, every environment variable, Mailpit, the first account, and common
+failures — see [`docs/SETUP.md`](docs/SETUP.md).
 
 ### Database
 
@@ -100,6 +103,7 @@ docs/                  Specification and engineering documentation
 
 | Document | Covers |
 |---|---|
+| [`docs/SETUP.md`](docs/SETUP.md) | Local setup: prerequisites, PostgreSQL, environment variables, Mailpit, migrations, troubleshooting |
 | [`docs/README.md`](docs/README.md) | Scope, feature matrix, architecture at a glance, canonical values |
 | [`docs/0-ARCHITECTURE.md`](docs/0-ARCHITECTURE.md) | Topology, lifecycles, failure domains, ADRs |
 | [`docs/0-DOCUMENT-MODEL.md`](docs/0-DOCUMENT-MODEL.md) | Shared document aggregate, snapshots, calculation and numbering rules |

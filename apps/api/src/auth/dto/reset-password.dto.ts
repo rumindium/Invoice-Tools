@@ -1,0 +1,13 @@
+import { IsString, MaxLength, MinLength } from 'class-validator';
+
+export class ResetPasswordDto {
+  @IsString()
+  @MinLength(16, { message: 'Tautan tidak valid atau sudah kedaluwarsa.' })
+  @MaxLength(200, { message: 'Tautan tidak valid atau sudah kedaluwarsa.' })
+  token!: string;
+
+  @IsString()
+  @MinLength(8, { message: 'Password minimal 8 karakter.' })
+  @MaxLength(128, { message: 'Password maksimal 128 karakter.' })
+  password!: string;
+}

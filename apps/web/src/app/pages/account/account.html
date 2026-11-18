@@ -1,0 +1,169 @@
+<section class="ui-page">
+  <header class="ui-page-head">
+    <div>
+      <p class="ui-eyebrow">Account</p>
+      <h1>Your account</h1>
+      <p class="ui-sub">
+        Manage the name shown in your workspace and the password you use to sign in.
+      </p>
+    </div>
+    <div class="ui-actions">
+      <button class="ui-btn ui-btn-ghost" type="button" (click)="logout()">Sign out</button>
+    </div>
+  </header>
+
+  <div class="account-grid">
+    <section class="ui-card" aria-labelledby="account-profile-heading">
+      <header class="ui-panel-head">
+        <div>
+          <h2 id="account-profile-heading">Profile</h2>
+          <p>Your name appears in the sidebar and on your workspace.</p>
+        </div>
+      </header>
+
+      <div class="account-body">
+        <div class="account-identity">
+          <span class="account-avatar" aria-hidden="true">{{ initials() }}</span>
+          <div class="account-identity-copy">
+            <strong>{{ user()?.displayName ?? 'User' }}</strong>
+            <span>{{ user()?.email }}</span>
+          </div>
+          <span
+            class="ui-badge"
+            [class.ui-badge-green]="verified()"
+            [class.ui-badge-amber]="!verified()"
+          >
+            {{ verified() ? 'Verified' : 'Unverified' }}
+          </span>
+        </div>
+
+        <dl class="account-meta">
+          <div>
+            <dt>Email</dt>
+            <dd>{{ user()?.email ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt>Workspace</dt>
+            <dd>{{ workspace()?.name ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt>Member since</dt>
+            <dd>{{ memberSince() }}</dd>
+          </div>
+        </dl>
+
+        @if (profileSaved()) {
+        <p class="ui-alert ui-alert-success" role="status">Profile updated.</p>
+        } @if (profileError()) {
+        <p class="ui-alert account-error" role="alert">{{ profileError() }}</p>
+        }
+
+        <form class="account-form" [formGroup]="profileForm" (ngSubmit)="saveProfile()" novalidate>
+          <label class="ui-field">
+            <span>Display name</span>
+            <input
+              class="ui-input"
+              type="text"
+              formControlName="displayName"
+              autocomplete="name"
+              placeholder="Your name"
+            />
+            @if ( profileForm.controls.displayName.invalid &&
+            (profileForm.controls.displayName.touched || profileForm.controls.displayName.dirty) ) {
+            <small class="ui-field-error">
+              {{ profileForm.controls.displayName.hasError('required') ? 'Name is required.' : 'Name
+              must be 2 to 80 characters.' }}
+            </small>
+            }
+          </label>
+
+          <div class="account-actions">
+            <button class="ui-btn ui-btn-primary" type="submit" [disabled]="savingProfile()">
+              {{ savingProfile() ? 'Saving…' : 'Save changes' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section class="ui-card" aria-labelledby="account-password-heading">
+      <header class="ui-panel-head">
+        <div>
+          <h2 id="account-password-heading">Password</h2>
+          <p>Changing it signs you out on every other device.</p>
+        </div>
+      </header>
+
+      <div class="account-body">
+        @if (passwordSaved()) {
+        <p class="ui-alert ui-alert-success" role="status">Password updated.</p>
+        } @if (passwordError()) {
+        <p class="ui-alert account-error" role="alert">{{ passwordError() }}</p>
+        }
+
+        <form
+          class="account-form"
+          [formGroup]="passwordForm"
+          (ngSubmit)="savePassword()"
+          novalidate
+        >
+          <label class="ui-field">
+            <span>Current password</span>
+            <input
+              class="ui-input"
+              type="password"
+              formControlName="currentPassword"
+              autocomplete="current-password"
+            />
+            @if ( passwordForm.controls.currentPassword.invalid &&
+            (passwordForm.controls.currentPassword.touched ||
+            passwordForm.controls.currentPassword.dirty) ) {
+            <small class="ui-field-error">Enter your current password.</small>
+            }
+          </label>
+
+          <div class="account-form-row">
+            <label class="ui-field">
+              <span>New password</span>
+              <input
+                class="ui-input"
+                type="password"
+                formControlName="newPassword"
+                autocomplete="new-password"
+              />
+              @if ( passwordForm.controls.newPassword.invalid &&
+              (passwordForm.controls.newPassword.touched || passwordForm.controls.newPassword.dirty)
+              ) {
+              <small class="ui-field-error">
+                {{ passwordForm.controls.newPassword.hasError('minlength') ? 'Use at least 8
+                characters.' : 'Enter a new password.' }}
+              </small>
+              }
+            </label>
+
+            <label class="ui-field">
+              <span>Confirm new password</span>
+              <input
+                class="ui-input"
+                type="password"
+                formControlName="confirmPassword"
+                autocomplete="new-password"
+              />
+              @if ( passwordForm.controls.confirmPassword.touched &&
+              passwordForm.controls.confirmPassword.value !==
+              passwordForm.controls.newPassword.value ) {
+              <small class="ui-field-error">The new passwords do not match.</small>
+              }
+            </label>
+          </div>
+
+          <div class="account-actions">
+            <button class="ui-btn ui-btn-primary" type="submit" [disabled]="savingPassword()">
+              {{ savingPassword() ? 'Updating…' : 'Update password' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </div>
+</section>

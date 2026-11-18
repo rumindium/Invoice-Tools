@@ -3,6 +3,14 @@ import { HttpErrorResponse } from '@angular/common/http';
 const MESSAGE_TRANSLATIONS: Record<string, string> = {
   'Email sudah terdaftar.': 'This email is already registered.',
   'Email atau password salah.': 'Incorrect email or password.',
+  'Email belum diverifikasi. Cek kotak masuk untuk tautan aktivasi.':
+    'Your email is not verified yet. Open the activation link we sent you.',
+  'Tautan tidak valid atau sudah kedaluwarsa.': 'This link is invalid or has expired.',
+  'Password berhasil diperbarui. Silakan masuk kembali.':
+    'Your password has been updated. Please sign in again.',
+  'Password berhasil diperbarui.': 'Your password has been updated.',
+  'Password saat ini salah.': 'Your current password is incorrect.',
+  'Password saat ini wajib diisi.': 'Enter your current password.',
   'Email tidak valid.': 'Enter a valid email address.',
   'Nama minimal 2 karakter.': 'Name must be at least 2 characters.',
   'Nama maksimal 80 karakter.': 'Name must be at most 80 characters.',

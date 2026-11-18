@@ -9,12 +9,13 @@ import {
 } from './document.entity';
 import { Asset, Payment, PrintToken } from './payment.entity';
 import { AuditEvent, BackgroundJob, IdempotencyKey } from './system.entity';
-import { Session, User } from './user.entity';
+import { AuthToken, Session, User } from './user.entity';
 import { Workspace, WorkspaceMember } from './workspace.entity';
 
 export const entities = [
   User,
   Session,
+  AuthToken,
   Workspace,
   WorkspaceMember,
   Company,
@@ -37,6 +38,7 @@ export const entities = [
 export {
   Asset,
   AuditEvent,
+  AuthToken,
   BackgroundJob,
   CatalogItem,
   Company,

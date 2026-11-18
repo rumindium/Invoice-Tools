@@ -10,6 +10,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/documents': 'My Invoices',
   '/invoices/new': 'New Invoice',
   '/company': 'Company',
+  '/account': 'Account',
 };
 
 @Component({

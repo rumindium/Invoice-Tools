@@ -21,6 +21,25 @@ export const routes: Routes = [
     title: 'Create account — Rumindium Invoice',
   },
   {
+    path: 'verify-email',
+    loadComponent: () => import('./pages/auth/verify-email').then((page) => page.VerifyEmailPage),
+    title: 'Verify your email — Rumindium Invoice',
+  },
+  {
+    path: 'forgot-password',
+    canActivate: [guestGuard],
+    loadComponent: () =>
+      import('./pages/auth/forgot-password').then((page) => page.ForgotPasswordPage),
+    title: 'Forgot password — Rumindium Invoice',
+  },
+  {
+    path: 'reset-password',
+    canActivate: [guestGuard],
+    loadComponent: () =>
+      import('./pages/auth/reset-password').then((page) => page.ResetPasswordPage),
+    title: 'Reset password — Rumindium Invoice',
+  },
+  {
     path: '',
     canActivate: [authGuard],
     loadComponent: () => import('./layouts/app-shell').then((layout) => layout.AppShell),
@@ -53,6 +72,11 @@ export const routes: Routes = [
         path: 'company',
         loadComponent: () => import('./pages/company/company').then((page) => page.CompanyPage),
         title: 'Company — Rumindium Invoice',
+      },
+      {
+        path: 'account',
+        loadComponent: () => import('./pages/account/account').then((page) => page.AccountPage),
+        title: 'Account — Rumindium Invoice',
       },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],

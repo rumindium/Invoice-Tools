@@ -8,6 +8,8 @@ export interface AuthUser {
   id: string;
   email: string;
   displayName: string;
+  emailVerifiedAt: string | null;
+  createdAt: string;
 }
 
 export interface AuthWorkspace {
@@ -29,6 +31,15 @@ export interface RegisterPayload {
   displayName: string;
   email: string;
   password: string;
+}
+
+export interface RegisterResponse {
+  email: string;
+  verificationRequired: true;
+}
+
+export interface MessageResponse {
+  message: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -58,29 +69,54 @@ export class AuthService {
   }
 
   async login(payload: LoginPayload): Promise<AuthResponse> {
-    const origin = await this.api.apiOrigin;
-    const response = await firstValueFrom(
-      this.http.post<AuthResponse>(`${origin}/api/v1/auth/login`, payload, {
-        withCredentials: true,
-      }),
-    );
+    const response = await this.post<AuthResponse>('login', payload);
 
     this.apply(response);
     this.loaded.set(true);
     return response;
   }
 
-  async register(payload: RegisterPayload): Promise<AuthResponse> {
-    const origin = await this.api.apiOrigin;
-    const response = await firstValueFrom(
-      this.http.post<AuthResponse>(`${origin}/api/v1/auth/register`, payload, {
-        withCredentials: true,
-      }),
-    );
+  /** Registration only queues the account; access starts once the email is verified. */
+  register(payload: RegisterPayload): Promise<RegisterResponse> {
+    return this.post<RegisterResponse>('register', payload);
+  }
+
+  async verifyEmail(token: string): Promise<AuthResponse> {
+    const response = await this.post<AuthResponse>('verify-email', { token });
 
     this.apply(response);
     this.loaded.set(true);
     return response;
+  }
+
+  resendVerification(email: string): Promise<MessageResponse> {
+    return this.post<MessageResponse>('verify-email/resend', { email });
+  }
+
+  requestPasswordReset(email: string): Promise<MessageResponse> {
+    return this.post<MessageResponse>('forgot-password', { email });
+  }
+
+  resetPassword(token: string, password: string): Promise<MessageResponse> {
+    return this.post<MessageResponse>('reset-password', { token, password });
+  }
+
+  async updateProfile(displayName: string): Promise<AuthResponse> {
+    const origin = await this.api.apiOrigin;
+    const response = await firstValueFrom(
+      this.http.patch<AuthResponse>(
+        `${origin}/api/v1/auth/me`,
+        { displayName },
+        { withCredentials: true },
+      ),
+    );
+
+    this.apply(response);
+    return response;
+  }
+
+  changePassword(currentPassword: string, newPassword: string): Promise<MessageResponse> {
+    return this.post<MessageResponse>('change-password', { currentPassword, newPassword });
   }
 
   async logout(): Promise<void> {
@@ -96,6 +132,14 @@ export class AuthService {
       this.loaded.set(true);
       await this.router.navigateByUrl('/login');
     }
+  }
+
+  private async post<T>(path: string, body: unknown): Promise<T> {
+    const origin = await this.api.apiOrigin;
+
+    return firstValueFrom(
+      this.http.post<T>(`${origin}/api/v1/auth/${path}`, body, { withCredentials: true }),
+    );
   }
 
   private async loadSession(): Promise<void> {

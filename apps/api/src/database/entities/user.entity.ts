@@ -25,6 +25,9 @@ export class User {
   @Column({ name: 'password_hash', type: 'text', nullable: true })
   passwordHash!: string | null;
 
+  @Column({ name: 'email_verified_at', type: 'timestamptz', precision: 6, nullable: true })
+  emailVerifiedAt!: Date | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz', precision: 6 })
   createdAt!: Date;
 
@@ -62,6 +65,38 @@ export class Session {
   @Index()
   @Column({ name: 'expires_at', type: 'timestamptz', precision: 6 })
   expiresAt!: Date;
+
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'user_id' })
+  user!: User;
+}
+
+export type AuthTokenKind = 'EMAIL_VERIFY' | 'PASSWORD_RESET';
+
+@Entity({ name: 'auth_tokens' })
+export class AuthToken {
+  @PrimaryColumn({ type: 'text' })
+  id!: string;
+
+  @Index()
+  @Column({ name: 'user_id', type: 'text' })
+  userId!: string;
+
+  @Column({ type: 'text' })
+  kind!: AuthTokenKind;
+
+  @Column({ name: 'token_hash', type: 'bytea', unique: true })
+  tokenHash!: Buffer;
+
+  @Index()
+  @Column({ name: 'expires_at', type: 'timestamptz', precision: 6 })
+  expiresAt!: Date;
+
+  @Column({ name: 'used_at', type: 'timestamptz', precision: 6, nullable: true })
+  usedAt!: Date | null;
+
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz', precision: 6 })
+  createdAt!: Date;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })

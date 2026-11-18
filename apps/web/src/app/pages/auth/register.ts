@@ -6,7 +6,7 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { AuthLayout } from '../../layouts/auth-layout';
 import { apiErrorMessage } from '../../core/http-error';
 import { AuthService } from '../../core/auth.service';
@@ -31,7 +31,6 @@ function passwordsMatch(control: AbstractControl): ValidationErrors | null {
 export class RegisterPage {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
-  private readonly router = inject(Router);
 
   protected readonly form = this.fb.nonNullable.group(
     {
@@ -46,6 +45,10 @@ export class RegisterPage {
   protected readonly submitting = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly showPassword = signal(false);
+  protected readonly sentTo = signal<string | null>(null);
+  protected readonly resending = signal(false);
+  protected readonly resent = signal(false);
+  protected readonly resendError = signal<string | null>(null);
 
   protected get displayName() {
     return this.form.controls.displayName;
@@ -74,12 +77,31 @@ export class RegisterPage {
 
     try {
       const { displayName, email, password } = this.form.getRawValue();
-      await this.auth.register({ displayName, email, password });
-      await this.router.navigateByUrl('/dashboard');
+      const response = await this.auth.register({ displayName, email, password });
+      this.sentTo.set(response.email);
     } catch (error) {
       this.error.set(apiErrorMessage(error));
     } finally {
       this.submitting.set(false);
+    }
+  }
+
+  protected async resend(): Promise<void> {
+    const email = this.sentTo();
+    if (!email || this.resending()) {
+      return;
+    }
+
+    this.resending.set(true);
+    this.resendError.set(null);
+
+    try {
+      await this.auth.resendVerification(email);
+      this.resent.set(true);
+    } catch (error) {
+      this.resendError.set(apiErrorMessage(error));
+    } finally {
+      this.resending.set(false);
     }
   }
 

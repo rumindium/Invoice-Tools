@@ -98,6 +98,20 @@
         </svg>
         Company
       </a>
+      <a class="nav-item" routerLink="/account" routerLinkActive="is-active" (click)="closeNav()">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="12" cy="8" r="3.4" />
+          <path d="M5 20c0-3.4 3.1-5.6 7-5.6s7 2.2 7 5.6" />
+        </svg>
+        Account
+      </a>
     </nav>
 
     <div class="sidebar-bottom">
@@ -111,10 +125,10 @@
 
       <div class="account">
         <span class="avatar" aria-hidden="true">{{ initials() }}</span>
-        <div class="account-meta">
+        <a class="account-meta" routerLink="/account" (click)="closeNav()">
           <strong>{{ user()?.displayName ?? 'User' }}</strong>
           <span>{{ user()?.email }}</span>
-        </div>
+        </a>
         <button
           class="icon-button account-logout"
           type="button"

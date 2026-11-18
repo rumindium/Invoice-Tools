@@ -247,6 +247,12 @@
   display: grid;
   min-width: 0;
   gap: 1px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.account-meta:hover strong {
+  color: var(--accent);
 }
 
 .workspace-chip strong,

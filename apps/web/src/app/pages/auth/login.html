@@ -20,6 +20,14 @@
     </svg>
     <span>{{ error() }}</span>
   </div>
+  } @if (needsVerification()) {
+  <div class="auth-note">
+    <span>Need the activation email again?</span>
+    <button class="auth-inline" type="button" [disabled]="resending()" (click)="resend()">
+      @if (resent()) { Activation email sent } @else if (resending()) { Sending… } @else { Resend it
+      }
+    </button>
+  </div>
   }
 
   <form class="auth-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
@@ -54,7 +62,10 @@
     </div>
 
     <div class="auth-field">
-      <label for="login-password">Password</label>
+      <div class="auth-label-row">
+        <label for="login-password">Password</label>
+        <a class="auth-label-link" routerLink="/forgot-password">Forgot password?</a>
+      </div>
       <div class="auth-input">
         <svg
           viewBox="0 0 24 24"

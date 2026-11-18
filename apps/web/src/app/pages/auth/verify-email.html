@@ -1,0 +1,89 @@
+<app-auth-layout>
+  @if (state() === 'verifying') {
+  <div class="auth-head">
+    <p class="eyebrow">Activating account</p>
+    <h1>Checking your link</h1>
+    <p>Hold on while we confirm your email address.</p>
+  </div>
+  <div class="auth-center">
+    <span class="auth-page-spinner" aria-hidden="true"></span>
+  </div>
+  } @else if (state() === 'verified') {
+  <div class="auth-head">
+    <p class="eyebrow">Account active</p>
+    <h1>You're all set</h1>
+    <p>Your email is confirmed and you are signed in to your workspace.</p>
+  </div>
+  <div class="auth-center">
+    <span class="auth-center-icon" aria-hidden="true">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="m5 12.5 4.5 4.5L19 7.5" />
+      </svg>
+    </span>
+    <a class="auth-submit" routerLink="/dashboard">Go to dashboard</a>
+  </div>
+  <p class="auth-switch">Start with your company profile, then issue your first invoice.</p>
+  } @else {
+  <div class="auth-head">
+    <p class="eyebrow">Activation link</p>
+    <h1>{{ state() === 'missing' ? 'This link is incomplete' : 'This link did not work' }}</h1>
+    <p>
+      {{ state() === 'missing' ? 'The activation link is missing its token.' : error() }} Enter your
+      email and we will send a fresh one.
+    </p>
+  </div>
+
+  @if (resent()) {
+  <div class="auth-note">
+    <span>A new activation email is on its way. It expires in 24 hours.</span>
+  </div>
+  }
+
+  <form class="auth-form" (ngSubmit)="submitResend()" novalidate>
+    <div class="auth-field">
+      <label for="verify-email">Email</label>
+      <div class="auth-input">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <rect x="3" y="5" width="18" height="14" rx="2.5" />
+          <path d="m4 7 8 6 8-6" />
+        </svg>
+        <input
+          id="verify-email"
+          type="email"
+          [formControl]="resendForm"
+          autocomplete="email"
+          placeholder="you@company.com"
+        />
+      </div>
+      @if (resendForm.invalid && (resendForm.touched || resendForm.dirty)) {
+      <small class="auth-field-error">
+        {{ resendForm.hasError('required') ? 'Email is required.' : 'Enter a valid email address.'
+        }}
+      </small>
+      }
+    </div>
+
+    <button class="auth-submit" type="submit" [disabled]="resending()">
+      @if (resending()) {
+      <span class="auth-spinner" aria-hidden="true"></span>
+      Sending… } @else { Send activation link }
+    </button>
+  </form>
+
+  <p class="auth-switch">Already activated? <a routerLink="/login">Sign in</a></p>
+  }
+</app-auth-layout>
