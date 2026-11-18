@@ -156,7 +156,14 @@
 
         <label class="ui-field">
           <span>Unit price (IDR)</span>
-          <input class="ui-input" type="number" min="0" step="1000" formControlName="unitPrice" />
+          <input
+            class="ui-input"
+            type="text"
+            inputmode="decimal"
+            autocomplete="off"
+            appCurrency
+            formControlName="unitPrice"
+          />
         </label>
 
         <label class="ui-field">

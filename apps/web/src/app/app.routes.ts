@@ -92,6 +92,11 @@ export const routes: Routes = [
         title: 'Item — Rumindium Invoice',
       },
       {
+        path: 'activity',
+        loadComponent: () => import('./pages/activity/activity').then((page) => page.ActivityPage),
+        title: 'Activity — Rumindium Invoice',
+      },
+      {
         path: 'company',
         loadComponent: () => import('./pages/company/company').then((page) => page.CompanyPage),
         title: 'Company — Rumindium Invoice',

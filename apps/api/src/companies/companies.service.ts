@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'node:crypto';
 import { IsNull, Repository } from 'typeorm';
+import { AuditService } from '../audit/audit.service';
 import { Decimal } from '../database/decimal.transformer';
 import { Company } from '../database/entities';
 import { CompanyInputDto } from './dto/company-input.dto';
@@ -52,7 +53,10 @@ export function toCompanyView(company: Company): CompanyView {
 
 @Injectable()
 export class CompaniesService {
-  constructor(@InjectRepository(Company) private readonly companies: Repository<Company>) {}
+  constructor(
+    @InjectRepository(Company) private readonly companies: Repository<Company>,
+    private readonly audit: AuditService,
+  ) {}
 
   async list(workspaceId: string): Promise<CompanyView[]> {
     const companies = await this.companies.find({
@@ -72,7 +76,7 @@ export class CompaniesService {
     return company ? toCompanyView(company) : null;
   }
 
-  async create(workspaceId: string, dto: CompanyInputDto): Promise<CompanyView> {
+  async create(workspaceId: string, userId: string, dto: CompanyInputDto): Promise<CompanyView> {
     const existing = await this.companies.count({
       where: { workspaceId, archivedAt: IsNull() },
     });
@@ -100,10 +104,26 @@ export class CompaniesService {
       isDefault: existing === 0,
     });
 
-    return toCompanyView(await this.companies.save(company));
+    const saved = await this.companies.save(company);
+
+    this.audit.record({
+      workspaceId,
+      actorId: userId,
+      action: 'company.created',
+      targetType: 'company',
+      targetId: saved.id,
+      metadata: { name: saved.legalName },
+    });
+
+    return toCompanyView(saved);
   }
 
-  async update(workspaceId: string, companyId: string, dto: CompanyInputDto): Promise<CompanyView> {
+  async update(
+    workspaceId: string,
+    userId: string,
+    companyId: string,
+    dto: CompanyInputDto,
+  ): Promise<CompanyView> {
     const company = await this.requireOwned(workspaceId, companyId);
 
     Object.assign(company, {
@@ -128,12 +148,33 @@ export class CompaniesService {
         : {}),
     });
 
-    return toCompanyView(await this.companies.save(company));
+    const saved = await this.companies.save(company);
+
+    this.audit.record({
+      workspaceId,
+      actorId: userId,
+      action: 'company.updated',
+      targetType: 'company',
+      targetId: saved.id,
+      metadata: { name: saved.legalName },
+    });
+
+    return toCompanyView(saved);
   }
 
-  async archive(workspaceId: string, companyId: string): Promise<void> {
-    await this.requireOwned(workspaceId, companyId);
+  async archive(workspaceId: string, userId: string, companyId: string): Promise<void> {
+    const company = await this.requireOwned(workspaceId, companyId);
+
     await this.companies.update({ id: companyId }, { archivedAt: new Date(), isDefault: false });
+
+    this.audit.record({
+      workspaceId,
+      actorId: userId,
+      action: 'company.archived',
+      targetType: 'company',
+      targetId: companyId,
+      metadata: { name: company.legalName },
+    });
   }
 
   async requireOwned(workspaceId: string, companyId: string): Promise<Company> {

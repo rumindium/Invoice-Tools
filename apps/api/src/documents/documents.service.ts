@@ -2,6 +2,7 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'node:crypto';
 import { Brackets, EntityManager, In, IsNull, Repository } from 'typeorm';
+import { AuditService } from '../audit/audit.service';
 import { CompaniesService } from '../companies/companies.service';
 import { Decimal } from '../database/decimal.transformer';
 import {
@@ -13,6 +14,7 @@ import {
   Document,
   DocumentItem,
   DocumentNumberSequence,
+  InvoiceFollowUp,
 } from '../database/entities';
 import {
   DiscountType,
@@ -22,6 +24,7 @@ import {
   TaxMode,
 } from '../database/entities/enums';
 import { calculateDocument } from './calculation';
+import { FollowUpInputDto, FollowUpStatusDto } from './dto/follow-up.dto';
 import {
   ChangeStatusDto,
   InvoiceCustomerDto,
@@ -32,10 +35,12 @@ import { renderInvoicePdf } from './pdf/invoice-pdf';
 import {
   DocumentWithCustomer,
   DocumentWithDetails,
+  InvoiceFollowUpView,
   InvoiceHistoryEntry,
   InvoiceListRow,
   InvoiceSummary,
   InvoiceView,
+  toInvoiceFollowUpView,
   toInvoiceListRow,
   toInvoiceView,
 } from './views';
@@ -85,6 +90,9 @@ export class DocumentsService {
     @InjectRepository(DocumentNumberSequence)
     private readonly sequences: Repository<DocumentNumberSequence>,
     @InjectRepository(AuditEvent) private readonly audit: Repository<AuditEvent>,
+    @InjectRepository(InvoiceFollowUp)
+    private readonly followUps: Repository<InvoiceFollowUp>,
+    private readonly auditLog: AuditService,
     private readonly companies: CompaniesService,
   ) {}
 
@@ -203,10 +211,13 @@ export class DocumentsService {
 
   async get(workspaceId: string, documentId: string): Promise<InvoiceView> {
     const { document, company } = await this.load(workspaceId, documentId);
-    const history = await this.history(documentId);
+    const [history, followUps] = await Promise.all([
+      this.history(documentId),
+      this.followUpViews(documentId),
+    ]);
     const nextStatuses = ALLOWED_TRANSITIONS[document.status] ?? [];
 
-    return toInvoiceView(document, company, history, nextStatuses);
+    return toInvoiceView(document, company, history, nextStatuses, followUps);
   }
 
   async create(
@@ -298,7 +309,13 @@ export class DocumentsService {
           action: 'invoice.created',
           targetType: 'invoice',
           targetId: created.id,
-          metadata: { from: null, to: DocumentStatus.DRAFT, reason: null },
+          metadata: {
+            from: null,
+            to: DocumentStatus.DRAFT,
+            reason: null,
+            number: created.documentNumber,
+            total: Number(calculation.grandTotal),
+          },
           ip: null,
         }),
       );
@@ -311,6 +328,7 @@ export class DocumentsService {
 
   async update(
     workspaceId: string,
+    userId: string,
     documentId: string,
     payload: InvoicePayloadDto,
   ): Promise<InvoiceView> {
@@ -380,6 +398,19 @@ export class DocumentsService {
       await this.saveItems(manager, documentId, calculation.items, catalogItemIds);
     });
 
+    this.auditLog.record({
+      workspaceId,
+      actorId: userId,
+      action: 'invoice.updated',
+      targetType: 'invoice',
+      targetId: documentId,
+      metadata: {
+        number: document.documentNumber,
+        total: Number(calculation.grandTotal),
+        items: calculation.items.length,
+      },
+    });
+
     return this.get(workspaceId, documentId);
   }
 
@@ -447,7 +478,103 @@ export class DocumentsService {
     return this.get(workspaceId, documentId);
   }
 
-  async remove(workspaceId: string, documentId: string): Promise<void> {
+  async listFollowUps(workspaceId: string, documentId: string): Promise<InvoiceFollowUpView[]> {
+    await this.requireInvoice(workspaceId, documentId);
+    return this.followUpViews(documentId);
+  }
+
+  async addFollowUp(
+    workspaceId: string,
+    userId: string,
+    documentId: string,
+    dto: FollowUpInputDto,
+  ): Promise<InvoiceFollowUpView> {
+    await this.requireInvoice(workspaceId, documentId);
+
+    const saved = await this.followUps.save(
+      this.followUps.create({
+        id: randomUUID(),
+        workspaceId,
+        documentId,
+        activity: dto.activity,
+        method: dto.method,
+        followUpDate: toDateOnly(dto.followUpDate),
+        feedback: dto.feedback,
+        status: dto.status,
+        evidence: dto.evidence?.trim() || null,
+        createdById: userId,
+      }),
+    );
+
+    this.auditLog.record({
+      workspaceId,
+      actorId: userId,
+      action: 'invoice.follow_up_added',
+      targetType: 'invoice',
+      targetId: documentId,
+      metadata: { activity: saved.activity, method: saved.method, status: saved.status },
+    });
+
+    return this.followUpView(saved.id);
+  }
+
+  async changeFollowUpStatus(
+    workspaceId: string,
+    userId: string,
+    documentId: string,
+    followUpId: string,
+    dto: FollowUpStatusDto,
+  ): Promise<InvoiceFollowUpView> {
+    const followUp = await this.followUps.findOne({
+      where: { id: followUpId, documentId, workspaceId },
+    });
+
+    if (!followUp) {
+      throw new NotFoundException('Follow-up not found.');
+    }
+
+    const previousStatus = followUp.status;
+    followUp.status = dto.status;
+    await this.followUps.save(followUp);
+
+    this.auditLog.record({
+      workspaceId,
+      actorId: userId,
+      action: 'invoice.follow_up_status_changed',
+      targetType: 'invoice',
+      targetId: documentId,
+      metadata: { activity: followUp.activity, from: previousStatus, to: dto.status },
+    });
+
+    return this.followUpView(followUp.id);
+  }
+
+  async removeFollowUp(
+    workspaceId: string,
+    userId: string,
+    documentId: string,
+    followUpId: string,
+  ): Promise<void> {
+    const followUp = await this.followUps.findOne({
+      where: { id: followUpId, documentId, workspaceId },
+    });
+    const result = await this.followUps.delete({ id: followUpId, documentId, workspaceId });
+
+    if (!result.affected) {
+      throw new NotFoundException('Follow-up not found.');
+    }
+
+    this.auditLog.record({
+      workspaceId,
+      actorId: userId,
+      action: 'invoice.follow_up_deleted',
+      targetType: 'invoice',
+      targetId: documentId,
+      metadata: { activity: followUp?.activity ?? null, status: followUp?.status ?? null },
+    });
+  }
+
+  async remove(workspaceId: string, userId: string, documentId: string): Promise<void> {
     const { document } = await this.load(workspaceId, documentId);
 
     if (document.status !== DocumentStatus.DRAFT && document.status !== DocumentStatus.VOID) {
@@ -456,6 +583,19 @@ export class DocumentsService {
 
     document.deletedAt = new Date();
     await this.documents.save(document);
+
+    this.auditLog.record({
+      workspaceId,
+      actorId: userId,
+      action: 'invoice.deleted',
+      targetType: 'invoice',
+      targetId: documentId,
+      metadata: {
+        number: document.documentNumber,
+        status: document.status,
+        total: Number(document.grandTotal),
+      },
+    });
   }
 
   async pdf(
@@ -494,6 +634,44 @@ export class DocumentsService {
         at: event.createdAt.toISOString(),
       };
     });
+  }
+
+  private async followUpViews(documentId: string): Promise<InvoiceFollowUpView[]> {
+    const rows = await this.followUps.find({
+      where: { documentId },
+      relations: { createdBy: true },
+      order: { followUpDate: 'DESC', createdAt: 'DESC' },
+    });
+
+    return rows.map(toInvoiceFollowUpView);
+  }
+
+  private async followUpView(followUpId: string): Promise<InvoiceFollowUpView> {
+    const row = await this.followUps.findOne({
+      where: { id: followUpId },
+      relations: { createdBy: true },
+    });
+
+    if (!row) {
+      throw new NotFoundException('Follow-up not found.');
+    }
+
+    return toInvoiceFollowUpView(row);
+  }
+
+  private async requireInvoice(workspaceId: string, documentId: string): Promise<void> {
+    const count = await this.documents.count({
+      where: {
+        id: documentId,
+        workspaceId,
+        documentType: DocumentType.INVOICE,
+        deletedAt: IsNull(),
+      },
+    });
+
+    if (count === 0) {
+      throw new NotFoundException('Invoice not found.');
+    }
   }
 
   private async load(

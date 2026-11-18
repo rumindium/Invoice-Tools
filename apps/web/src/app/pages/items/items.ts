@@ -11,12 +11,13 @@ import { formatDate, formatIdr } from '../../core/format';
 import { apiErrorMessage } from '../../core/http-error';
 import { UnitOption, UnitService } from '../../core/unit.service';
 import { BarChart } from '../../ui/bar-chart/bar-chart';
+import { CurrencyInputDirective } from '../../ui/currency-input';
 
 type ItemsTab = 'items' | 'units';
 
 @Component({
   selector: 'app-items',
-  imports: [ReactiveFormsModule, RouterLink, BarChart],
+  imports: [ReactiveFormsModule, RouterLink, BarChart, CurrencyInputDirective],
   templateUrl: './items.html',
   styleUrl: './items.scss',
 })

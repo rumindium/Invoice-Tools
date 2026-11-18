@@ -89,6 +89,7 @@ export interface Invoice {
     balanceDue: number;
   };
   history: InvoiceHistoryEntry[];
+  followUps: InvoiceFollowUp[];
   nextStatuses: InvoiceStatus[];
   notes: string | null;
   terms: string | null;
@@ -107,6 +108,32 @@ export interface InvoiceHistoryEntry {
   reason: string | null;
   actorName: string | null;
   at: string;
+}
+
+export type FollowUpMethod = 'EMAIL' | 'WHATSAPP' | 'PHONE' | 'MEETING' | 'VISIT' | 'OTHER';
+
+export type FollowUpStatus = 'OPEN' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED';
+
+export interface InvoiceFollowUp {
+  id: string;
+  activity: string;
+  method: FollowUpMethod;
+  followUpDate: string;
+  feedback: string;
+  status: FollowUpStatus;
+  evidence: string | null;
+  createdByName: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FollowUpPayload {
+  activity: string;
+  method: FollowUpMethod;
+  followUpDate: string;
+  feedback: string;
+  status: FollowUpStatus;
+  evidence?: string;
 }
 
 export interface InvoiceSummary {
@@ -276,6 +303,45 @@ export class InvoiceService {
     return response.invoice;
   }
 
+  async addFollowUp(invoiceId: string, payload: FollowUpPayload): Promise<InvoiceFollowUp> {
+    const origin = await this.api.apiOrigin;
+    const response = await firstValueFrom(
+      this.http.post<{ followUp: InvoiceFollowUp }>(
+        `${origin}/api/v1/documents/${invoiceId}/follow-ups`,
+        payload,
+        { withCredentials: true },
+      ),
+    );
+
+    return response.followUp;
+  }
+
+  async changeFollowUpStatus(
+    invoiceId: string,
+    followUpId: string,
+    status: FollowUpStatus,
+  ): Promise<InvoiceFollowUp> {
+    const origin = await this.api.apiOrigin;
+    const response = await firstValueFrom(
+      this.http.patch<{ followUp: InvoiceFollowUp }>(
+        `${origin}/api/v1/documents/${invoiceId}/follow-ups/${followUpId}`,
+        { status },
+        { withCredentials: true },
+      ),
+    );
+
+    return response.followUp;
+  }
+
+  async removeFollowUp(invoiceId: string, followUpId: string): Promise<void> {
+    const origin = await this.api.apiOrigin;
+    await firstValueFrom(
+      this.http.delete<void>(`${origin}/api/v1/documents/${invoiceId}/follow-ups/${followUpId}`, {
+        withCredentials: true,
+      }),
+    );
+  }
+
   async remove(id: string): Promise<void> {
     const origin = await this.api.apiOrigin;
     await firstValueFrom(
@@ -336,6 +402,35 @@ export function statusClass(status: InvoiceStatus): string {
       return 'ui-badge ui-badge-red';
     case 'PARTIALLY_PAID':
       return 'ui-badge ui-badge-amber';
+    default:
+      return 'ui-badge ui-badge-neutral';
+  }
+}
+
+export const FOLLOW_UP_METHOD_LABEL: Record<FollowUpMethod, string> = {
+  EMAIL: 'Email',
+  WHATSAPP: 'WhatsApp',
+  PHONE: 'Phone call',
+  MEETING: 'Meeting',
+  VISIT: 'Visit',
+  OTHER: 'Other',
+};
+
+export const FOLLOW_UP_STATUS_LABEL: Record<FollowUpStatus, string> = {
+  OPEN: 'Open',
+  IN_PROGRESS: 'In progress',
+  DONE: 'Done',
+  CANCELLED: 'Cancelled',
+};
+
+export function followUpStatusClass(status: FollowUpStatus): string {
+  switch (status) {
+    case 'DONE':
+      return 'ui-badge ui-badge-green';
+    case 'IN_PROGRESS':
+      return 'ui-badge ui-badge-amber';
+    case 'OPEN':
+      return 'ui-badge ui-badge-blue';
     default:
       return 'ui-badge ui-badge-neutral';
   }

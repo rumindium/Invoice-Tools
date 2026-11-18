@@ -289,5 +289,140 @@
       </section>
     </aside>
   </div>
+
+  <section class="ui-card followup-card" aria-labelledby="followup-heading">
+    <header class="ui-panel-head">
+      <div>
+        <h2 id="followup-heading">Follow-ups</h2>
+        <p>Every contact attempt for this invoice: what was done, how, when and what came back.</p>
+      </div>
+      <span class="history-count">{{ followUps().length }}</span>
+    </header>
+
+    @if (followUpError()) {
+    <div class="ui-alert" role="alert">
+      <span>{{ followUpError() }}</span>
+      <button class="ui-link" type="button" (click)="followUpError.set('')">Close</button>
+    </div>
+    }
+
+    <form class="followup-form" [formGroup]="followUpForm" (ngSubmit)="addFollowUp()" novalidate>
+      <div class="followup-grid">
+        <label class="ui-field">
+          <span>Activity</span>
+          <input
+            class="ui-input"
+            formControlName="activity"
+            placeholder="Sent the first reminder"
+          />
+        </label>
+        <label class="ui-field">
+          <span>Method</span>
+          <select class="ui-select" formControlName="method">
+            @for (method of followUpMethods; track method) {
+            <option [value]="method">{{ methodLabel[method] }}</option>
+            }
+          </select>
+        </label>
+        <label class="ui-field">
+          <span>Date</span>
+          <input class="ui-input" type="date" formControlName="followUpDate" />
+        </label>
+        <label class="ui-field">
+          <span>Status</span>
+          <select class="ui-select" formControlName="status">
+            @for (status of followUpStatuses; track status) {
+            <option [value]="status">{{ followUpStatusLabel[status] }}</option>
+            }
+          </select>
+        </label>
+        <label class="ui-field followup-span-2">
+          <span>Feedback</span>
+          <textarea
+            class="ui-textarea"
+            rows="2"
+            formControlName="feedback"
+            placeholder="They promised to pay before the 25th."
+          ></textarea>
+        </label>
+        <label class="ui-field followup-span-2">
+          <span>Evidence (optional)</span>
+          <input
+            class="ui-input"
+            formControlName="evidence"
+            placeholder="Link to the email thread, chat screenshot or a short note"
+          />
+        </label>
+      </div>
+
+      <div class="followup-form-actions">
+        <button class="ui-btn ui-btn-primary" type="submit" [disabled]="followUpSaving()">
+          {{ followUpSaving() ? 'Saving…' : 'Add follow-up' }}
+        </button>
+      </div>
+    </form>
+
+    @if (followUps().length === 0) {
+    <div class="ui-empty">
+      <strong>No follow-up yet</strong>
+      <p>Log the first email, WhatsApp message or call about this invoice.</p>
+    </div>
+    } @else {
+    <ul class="followup-list">
+      @for (followUp of followUps(); track followUp.id) {
+      <li>
+        <div class="followup-top">
+          <strong>{{ followUp.activity }}</strong>
+          <span [class]="followUpStatusClass(followUp.status)">
+            {{ followUpStatusLabel[followUp.status] }}
+          </span>
+        </div>
+        <span class="followup-meta">
+          {{ methodLabel[followUp.method] }} · {{ formatDate(followUp.followUpDate) }}{{
+          followUp.createdByName ? ' · ' + followUp.createdByName : '' }}
+        </span>
+        <p class="followup-feedback">{{ followUp.feedback }}</p>
+
+        @if (followUp.evidence; as evidence) {
+        <p class="followup-evidence">
+          <span class="followup-evidence-label">Evidence</span>
+          @if (evidence.startsWith('http')) {
+          <a class="ui-link" [href]="evidence" target="_blank" rel="noopener noreferrer">
+            {{ evidence }}
+          </a>
+          } @else {
+          <span>{{ evidence }}</span>
+          }
+        </p>
+        }
+
+        <div class="followup-actions">
+          <label class="ui-field followup-status-field">
+            <span>Status</span>
+            <select
+              class="ui-select"
+              [value]="followUp.status"
+              [disabled]="followUpRowBusy() === followUp.id"
+              (change)="updateFollowUpStatus(followUp, $event)"
+            >
+              @for (status of followUpStatuses; track status) {
+              <option [value]="status">{{ followUpStatusLabel[status] }}</option>
+              }
+            </select>
+          </label>
+          <button
+            class="ui-link row-link-danger"
+            type="button"
+            [disabled]="followUpRowBusy() === followUp.id"
+            (click)="removeFollowUp(followUp)"
+          >
+            Delete
+          </button>
+        </div>
+      </li>
+      }
+    </ul>
+    }
+  </section>
   }
 </section>

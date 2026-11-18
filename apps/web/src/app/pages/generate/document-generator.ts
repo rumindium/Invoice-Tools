@@ -8,6 +8,7 @@ import { CustomerContact, CustomerListRow, CustomerService } from '../../core/cu
 import { formatIdr } from '../../core/format';
 import { apiErrorMessage } from '../../core/http-error';
 import { InvoicePayload, InvoiceService } from '../../core/invoice.service';
+import { CurrencyInputDirective } from '../../ui/currency-input';
 
 function isoDate(offsetDays = 0): string {
   const date = new Date();
@@ -17,7 +18,7 @@ function isoDate(offsetDays = 0): string {
 
 @Component({
   selector: 'app-document-generator',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, CurrencyInputDirective],
   templateUrl: './document-generator.html',
   styleUrl: './document-generator.scss',
 })

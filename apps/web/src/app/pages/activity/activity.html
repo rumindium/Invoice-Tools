@@ -1,0 +1,97 @@
+<section class="ui-page">
+  <header class="ui-page-head">
+    <div>
+      <p class="ui-eyebrow">Workspace</p>
+      <h1>Activity</h1>
+      <p class="ui-sub">
+        Every sign-in, change and deletion in this workspace, with who did it and when.
+      </p>
+    </div>
+  </header>
+
+  @if (error()) {
+  <div class="ui-alert" role="alert">
+    <span>{{ error() }}</span>
+    <button class="ui-link" type="button" (click)="error.set('')">Close</button>
+  </div>
+  }
+
+  <div class="filter-row" role="group" aria-label="Filter activity">
+    @for (option of filters; track option) {
+    <button
+      class="filter-chip"
+      type="button"
+      [class.is-active]="filter() === option"
+      [attr.aria-pressed]="filter() === option"
+      (click)="setFilter(option)"
+    >
+      {{ filterLabel[option] }}
+    </button>
+    }
+  </div>
+
+  @if (loading()) {
+  <div class="ui-card ui-empty"><strong>Loading activity…</strong></div>
+  } @else if (events().length === 0) {
+  <div class="ui-card ui-empty">
+    <strong>Nothing recorded yet</strong>
+    <p>Create an invoice or update a customer, and the change appears here.</p>
+  </div>
+  } @else {
+  <section class="ui-card activity-card" aria-labelledby="activity-heading">
+    <header class="ui-panel-head">
+      <div>
+        <h2 id="activity-heading">Recent activity</h2>
+        <p>{{ total() }} events in this workspace</p>
+      </div>
+    </header>
+
+    <div class="ui-table-wrap">
+      <table class="ui-table activity-table">
+        <thead>
+          <tr>
+            <th>When</th>
+            <th>Who</th>
+            <th>Activity</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (event of events(); track event.id) {
+          <tr>
+            <td class="activity-when">{{ formatDateTime(event.at) }}</td>
+            <td class="activity-actor">
+              <strong>{{ actor(event) }}</strong>
+              <span class="ui-muted">{{ event.targetType }}</span>
+            </td>
+            <td>
+              <strong class="activity-action">{{ actionLabel(event) }}</strong>
+              <span class="ui-muted">{{ targetLabel(event) }}</span>
+            </td>
+            <td class="activity-detail">
+              <span>{{ detail(event) }}</span>
+              @if (event.ip) {
+              <span class="ui-muted activity-ip">from {{ event.ip }}</span>
+              }
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (hasMore()) {
+    <div class="activity-more">
+      <button
+        class="ui-btn ui-btn-ghost"
+        type="button"
+        [disabled]="loadingMore()"
+        (click)="loadMore()"
+      >
+        {{ loadingMore() ? 'Loading…' : 'Load more' }}
+      </button>
+    </div>
+    }
+  </section>
+  }
+</section>

@@ -1,0 +1,81 @@
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.filter-chip {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 12px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.filter-chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.filter-chip.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.activity-card {
+  padding: 16px;
+}
+
+.activity-card .ui-panel-head {
+  margin-bottom: 12px;
+}
+
+.activity-table th {
+  font-size: 9.5px;
+}
+
+.activity-table td {
+  display: table-cell;
+  vertical-align: top;
+  font-size: 11.5px;
+}
+
+.activity-when {
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 10.5px;
+}
+
+.activity-actor strong,
+.activity-action {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.activity-actor span,
+.activity-table td .ui-muted {
+  font-size: 10px;
+  text-transform: capitalize;
+}
+
+.activity-detail {
+  color: var(--muted);
+}
+
+.activity-ip {
+  display: block;
+  margin-top: 2px;
+  text-transform: none;
+}
+
+.activity-more {
+  display: flex;
+  justify-content: center;
+  padding-top: 12px;
+}

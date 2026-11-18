@@ -31,12 +31,14 @@ export class UnitsController {
     @Req() request: AuthenticatedRequest,
     @Body() dto: UnitInputDto,
   ): Promise<{ unit: UnitView }> {
-    return { unit: await this.units.create(request.auth!.workspace.id, dto) };
+    return {
+      unit: await this.units.create(request.auth!.workspace.id, request.auth!.user.id, dto),
+    };
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Req() request: AuthenticatedRequest, @Param('id') id: string): Promise<void> {
-    await this.units.remove(request.auth!.workspace.id, id);
+    await this.units.remove(request.auth!.workspace.id, request.auth!.user.id, id);
   }
 }

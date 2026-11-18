@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuditModule } from '../audit/audit.module';
 import { AuthToken, Session, User, Workspace, WorkspaceMember } from '../database/entities';
 import { MailModule } from '../mail/mail.module';
 import { AuthController } from './auth.controller';
@@ -9,6 +10,7 @@ import { SessionGuard } from './session.guard';
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, Session, AuthToken, Workspace, WorkspaceMember]),
+    AuditModule,
     MailModule,
   ],
   controllers: [AuthController],

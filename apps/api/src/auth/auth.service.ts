@@ -9,6 +9,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { Repository } from 'typeorm';
+import { AuditService } from '../audit/audit.service';
 import { loadEnv } from '../config/env';
 import { AuthToken, Session, User, Workspace, WorkspaceMember } from '../database/entities';
 import type { AuthTokenKind } from '../database/entities/user.entity';
@@ -106,6 +107,7 @@ export class AuthService {
     @InjectRepository(Workspace) private readonly workspaces: Repository<Workspace>,
     @InjectRepository(WorkspaceMember) private readonly members: Repository<WorkspaceMember>,
     private readonly mail: MailService,
+    private readonly audit: AuditService,
   ) {}
 
   /**
@@ -124,8 +126,10 @@ export class AuthService {
     const passwordHash = await hashPassword(dto.password);
     const userId = randomUUID();
 
+    let workspaceId: string;
+
     try {
-      await this.members.manager.transaction(async (manager) => {
+      workspaceId = await this.members.manager.transaction(async (manager) => {
         await manager.getRepository(User).save(
           manager.getRepository(User).create({
             id: userId,
@@ -152,6 +156,8 @@ export class AuthService {
             role: WorkspaceRole.OWNER,
           }),
         );
+
+        return workspace.id;
       });
     } catch (error) {
       if (isUniqueViolation(error)) {
@@ -163,6 +169,15 @@ export class AuthService {
     const user = await this.users.findOneOrFail({ where: { id: userId } });
     await this.sendVerification(user);
 
+    this.audit.record({
+      workspaceId,
+      actorId: user.id,
+      action: 'auth.registered',
+      targetType: 'user',
+      targetId: user.id,
+      metadata: { email: user.email, name: user.displayName },
+    });
+
     return { email: user.email, verificationRequired: true };
   }
 
@@ -171,6 +186,16 @@ export class AuthService {
     const user = await this.users.findOne({ where: { email } });
 
     if (!user?.passwordHash || !(await verifyPassword(dto.password, user.passwordHash))) {
+      this.audit.record({
+        workspaceId: user ? await this.workspaceOf(user.id) : null,
+        actorId: user?.id ?? null,
+        action: 'auth.login_failed',
+        targetType: 'user',
+        targetId: user?.id ?? email,
+        metadata: { email },
+        ip: meta.ip ?? null,
+      });
+
       throw new UnauthorizedException('Email atau password salah.');
     }
 
@@ -183,6 +208,16 @@ export class AuthService {
 
     const workspace = await this.ensureWorkspace(user.id, user.displayName);
     const session = await this.createSession(user.id, meta);
+
+    this.audit.record({
+      workspaceId: workspace.id,
+      actorId: user.id,
+      action: 'auth.login',
+      targetType: 'user',
+      targetId: user.id,
+      metadata: { email: user.email, name: user.displayName },
+      ip: meta.ip ?? null,
+    });
 
     return {
       user: toUserView(user),
@@ -210,6 +245,16 @@ export class AuthService {
 
     const workspace = await this.ensureWorkspace(user.id, user.displayName);
     const session = await this.createSession(user.id, meta);
+
+    this.audit.record({
+      workspaceId: workspace.id,
+      actorId: user.id,
+      action: 'auth.email_verified',
+      targetType: 'user',
+      targetId: user.id,
+      metadata: { email: user.email, name: user.displayName },
+      ip: meta.ip ?? null,
+    });
 
     return {
       user: toUserView(user),
@@ -250,6 +295,15 @@ export class AuthService {
             }),
           'password reset',
         );
+
+        this.audit.record({
+          workspaceId: await this.workspaceOf(user.id),
+          actorId: user.id,
+          action: 'auth.password_reset_requested',
+          targetType: 'user',
+          targetId: user.id,
+          metadata: { email: user.email },
+        });
       }
     }
 
@@ -271,6 +325,15 @@ export class AuthService {
     await this.tokens.delete({ userId: user.id, kind: 'PASSWORD_RESET' });
     // A reset signs out every existing device.
     await this.sessions.delete({ userId: user.id });
+
+    this.audit.record({
+      workspaceId: await this.workspaceOf(user.id),
+      actorId: user.id,
+      action: 'auth.password_reset',
+      targetType: 'user',
+      targetId: user.id,
+      metadata: { email: user.email },
+    });
 
     return { message: 'Password berhasil diperbarui. Silakan masuk kembali.' };
   }
@@ -299,11 +362,35 @@ export class AuthService {
     };
   }
 
-  async logout(token: string): Promise<void> {
-    await this.sessions.delete({ tokenHash: hashToken(token) });
+  async logout(token: string, meta: SessionMeta): Promise<void> {
+    const tokenHash = hashToken(token);
+    const session = await this.sessions.findOne({
+      where: { tokenHash },
+      relations: { user: true },
+    });
+
+    await this.sessions.delete({ tokenHash });
+
+    if (!session) {
+      return;
+    }
+
+    this.audit.record({
+      workspaceId: await this.workspaceOf(session.userId),
+      actorId: session.userId,
+      action: 'auth.logout',
+      targetType: 'user',
+      targetId: session.userId,
+      metadata: { email: session.user.email, name: session.user.displayName },
+      ip: meta.ip ?? null,
+    });
   }
 
-  async updateProfile(userId: string, displayName: string): Promise<AuthResponse> {
+  async updateProfile(
+    userId: string,
+    displayName: string,
+    meta: SessionMeta,
+  ): Promise<AuthResponse> {
     const user = await this.users.findOne({ where: { id: userId } });
 
     if (!user) {
@@ -314,6 +401,17 @@ export class AuthService {
     await this.users.save(user);
 
     const workspace = await this.ensureWorkspace(user.id, user.displayName);
+
+    this.audit.record({
+      workspaceId: workspace.id,
+      actorId: user.id,
+      action: 'auth.profile_updated',
+      targetType: 'user',
+      targetId: user.id,
+      metadata: { email: user.email, name: user.displayName },
+      ip: meta.ip ?? null,
+    });
+
     return { user: toUserView(user), workspace };
   }
 
@@ -322,6 +420,7 @@ export class AuthService {
     token: string,
     currentPassword: string,
     newPassword: string,
+    meta: SessionMeta,
   ): Promise<{ message: string }> {
     const tokenHash = hashToken(token);
     const session = await this.sessions.findOne({
@@ -351,7 +450,27 @@ export class AuthService {
       await this.sessions.delete(stale);
     }
 
+    this.audit.record({
+      workspaceId: await this.workspaceOf(user.id),
+      actorId: user.id,
+      action: 'auth.password_changed',
+      targetType: 'user',
+      targetId: user.id,
+      metadata: { email: user.email, name: user.displayName },
+      ip: meta.ip ?? null,
+    });
+
     return { message: 'Password berhasil diperbarui.' };
+  }
+
+  /** The workspace a user opens first, used to file auth events where the user can see them. */
+  private async workspaceOf(userId: string): Promise<string | null> {
+    const membership = await this.members.findOne({
+      where: { userId },
+      order: { createdAt: 'ASC' },
+    });
+
+    return membership?.workspaceId ?? null;
   }
 
   private async sendVerification(user: User): Promise<void> {

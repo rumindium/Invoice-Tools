@@ -7,10 +7,11 @@ import { formatDate, formatIdr } from '../../core/format';
 import { apiErrorMessage } from '../../core/http-error';
 import { STATUS_LABEL, displayStatus, statusClass } from '../../core/invoice.service';
 import { UnitService } from '../../core/unit.service';
+import { CurrencyInputDirective } from '../../ui/currency-input';
 
 @Component({
   selector: 'app-item-detail',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, CurrencyInputDirective],
   templateUrl: './item-detail.html',
   styleUrl: './item-detail.scss',
 })

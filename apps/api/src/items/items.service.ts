@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'node:crypto';
 import { ILike, IsNull, Repository } from 'typeorm';
+import { AuditService } from '../audit/audit.service';
 import { ChartPoint, monthBuckets, monthlySeries } from '../common/series';
 import { CatalogItem, Customer, Document, DocumentItem } from '../database/entities';
 import { CatalogKind, DocumentType } from '../database/entities/enums';
@@ -95,6 +96,7 @@ export class ItemsService {
   constructor(
     @InjectRepository(CatalogItem) private readonly items: Repository<CatalogItem>,
     @InjectRepository(Document) private readonly documents: Repository<Document>,
+    private readonly audit: AuditService,
   ) {}
 
   async list(
@@ -142,7 +144,7 @@ export class ItemsService {
     return { item: toItemRow(item, this.usage(lines, documents, item)), invoices };
   }
 
-  async create(workspaceId: string, dto: ItemInputDto): Promise<ItemListRow> {
+  async create(workspaceId: string, userId: string, dto: ItemInputDto): Promise<ItemListRow> {
     const item = await this.items.save(
       this.items.create({
         id: randomUUID(),
@@ -157,10 +159,24 @@ export class ItemsService {
       }),
     );
 
+    this.audit.record({
+      workspaceId,
+      actorId: userId,
+      action: 'item.created',
+      targetType: 'item',
+      targetId: item.id,
+      metadata: { name: item.name, unitPrice: Number(item.unitPrice), unit: item.unit },
+    });
+
     return toItemRow(item, EMPTY_USAGE);
   }
 
-  async update(workspaceId: string, itemId: string, dto: ItemInputDto): Promise<ItemListRow> {
+  async update(
+    workspaceId: string,
+    userId: string,
+    itemId: string,
+    dto: ItemInputDto,
+  ): Promise<ItemListRow> {
     const item = await this.requireOwned(workspaceId, itemId);
 
     Object.assign(item, {
@@ -175,13 +191,31 @@ export class ItemsService {
     const saved = await this.items.save(item);
     const documents = await this.loadInvoices(workspaceId);
 
+    this.audit.record({
+      workspaceId,
+      actorId: userId,
+      action: 'item.updated',
+      targetType: 'item',
+      targetId: saved.id,
+      metadata: { name: saved.name, unitPrice: Number(saved.unitPrice), unit: saved.unit },
+    });
+
     return toItemRow(saved, this.usage(this.lines(documents), documents, saved));
   }
 
-  async archive(workspaceId: string, itemId: string): Promise<void> {
-    await this.requireOwned(workspaceId, itemId);
+  async archive(workspaceId: string, userId: string, itemId: string): Promise<void> {
+    const item = await this.requireOwned(workspaceId, itemId);
 
     await this.items.update({ id: itemId }, { archivedAt: new Date(), isActive: false });
+
+    this.audit.record({
+      workspaceId,
+      actorId: userId,
+      action: 'item.archived',
+      targetType: 'item',
+      targetId: itemId,
+      metadata: { name: item.name },
+    });
   }
 
   private async requireOwned(workspaceId: string, itemId: string): Promise<CatalogItem> {

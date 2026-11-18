@@ -1,5 +1,11 @@
 import type { Decimal } from '../database/decimal.transformer';
-import type { Company, Customer, Document, DocumentItem } from '../database/entities';
+import type {
+  Company,
+  Customer,
+  Document,
+  DocumentItem,
+  InvoiceFollowUp,
+} from '../database/entities';
 import { DocumentStatus } from '../database/entities/enums';
 
 export interface InvoiceItemView {
@@ -58,6 +64,19 @@ export interface InvoiceHistoryEntry {
   at: string;
 }
 
+export interface InvoiceFollowUpView {
+  id: string;
+  activity: string;
+  method: string;
+  followUpDate: string;
+  feedback: string;
+  status: string;
+  evidence: string | null;
+  createdByName: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface InvoiceTotalsView {
   subtotal: number;
   discountTotal: number;
@@ -88,6 +107,7 @@ export interface InvoiceView {
   items: InvoiceItemView[];
   totals: InvoiceTotalsView;
   history: InvoiceHistoryEntry[];
+  followUps: InvoiceFollowUpView[];
   nextStatuses: string[];
   notes: string | null;
   terms: string | null;
@@ -181,11 +201,27 @@ export function toInvoiceCustomerView(document: DocumentWithCustomer): InvoiceCu
   return parseSnapshot<InvoiceCustomerView>(document.customerSnapshot, fallback);
 }
 
+export function toInvoiceFollowUpView(followUp: InvoiceFollowUp): InvoiceFollowUpView {
+  return {
+    id: followUp.id,
+    activity: followUp.activity,
+    method: followUp.method,
+    followUpDate: followUp.followUpDate,
+    feedback: followUp.feedback,
+    status: followUp.status,
+    evidence: followUp.evidence,
+    createdByName: followUp.createdBy?.displayName ?? null,
+    createdAt: followUp.createdAt.toISOString(),
+    updatedAt: followUp.updatedAt.toISOString(),
+  };
+}
+
 export function toInvoiceView(
   document: DocumentWithDetails,
   company: Company,
   history: InvoiceHistoryEntry[] = [],
   nextStatuses: string[] = [],
+  followUps: InvoiceFollowUpView[] = [],
 ): InvoiceView {
   const customer = toInvoiceCustomerView(document);
 
@@ -231,6 +267,7 @@ export function toInvoiceView(
       balanceDue: Number(document.balanceDue),
     },
     history,
+    followUps,
     nextStatuses,
     notes: document.notes,
     terms: document.terms,

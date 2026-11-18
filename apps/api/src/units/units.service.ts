@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'node:crypto';
 import { Repository } from 'typeorm';
+import { AuditService } from '../audit/audit.service';
 import { UnitOfMeasure } from '../database/entities';
 import { UnitInputDto } from './dto/unit.dto';
 
@@ -35,7 +36,10 @@ function key(value: string): string {
 
 @Injectable()
 export class UnitsService {
-  constructor(@InjectRepository(UnitOfMeasure) private readonly units: Repository<UnitOfMeasure>) {}
+  constructor(
+    @InjectRepository(UnitOfMeasure) private readonly units: Repository<UnitOfMeasure>,
+    private readonly audit: AuditService,
+  ) {}
 
   async list(workspaceId: string): Promise<UnitView[]> {
     const custom = await this.units.find({ where: { workspaceId }, order: { name: 'ASC' } });
@@ -54,7 +58,7 @@ export class UnitsService {
     ];
   }
 
-  async create(workspaceId: string, dto: UnitInputDto): Promise<UnitView> {
+  async create(workspaceId: string, userId: string, dto: UnitInputDto): Promise<UnitView> {
     const name = dto.name.trim().replace(/\s+/g, ' ');
 
     if (!name) {
@@ -74,10 +78,19 @@ export class UnitsService {
 
     const saved = await this.units.save(this.units.create({ id: randomUUID(), workspaceId, name }));
 
+    this.audit.record({
+      workspaceId,
+      actorId: userId,
+      action: 'unit.created',
+      targetType: 'unit',
+      targetId: saved.id,
+      metadata: { name: saved.name },
+    });
+
     return { id: saved.id, name: saved.name, isCustom: true };
   }
 
-  async remove(workspaceId: string, unitId: string): Promise<void> {
+  async remove(workspaceId: string, userId: string, unitId: string): Promise<void> {
     const unit = await this.units.findOne({ where: { id: unitId, workspaceId } });
 
     if (!unit) {
@@ -85,5 +98,14 @@ export class UnitsService {
     }
 
     await this.units.delete({ id: unit.id });
+
+    this.audit.record({
+      workspaceId,
+      actorId: userId,
+      action: 'unit.removed',
+      targetType: 'unit',
+      targetId: unit.id,
+      metadata: { name: unit.name },
+    });
   }
 }

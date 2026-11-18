@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'node:crypto';
 import { ILike, IsNull, Repository } from 'typeorm';
+import { AuditService } from '../audit/audit.service';
 import { ChartPoint, monthBuckets, monthlySeries } from '../common/series';
 import { Customer, CustomerContact, Document } from '../database/entities';
 import { CustomerType, DocumentStatus, DocumentType } from '../database/entities/enums';
@@ -121,6 +122,7 @@ export class CustomersService {
     @InjectRepository(Customer) private readonly customers: Repository<Customer>,
     @InjectRepository(CustomerContact) private readonly contacts: Repository<CustomerContact>,
     @InjectRepository(Document) private readonly documents: Repository<Document>,
+    private readonly audit: AuditService,
   ) {}
 
   async list(
@@ -206,7 +208,11 @@ export class CustomersService {
     return contacts.map(toContactView);
   }
 
-  async create(workspaceId: string, dto: CustomerInputDto): Promise<CustomerListRow> {
+  async create(
+    workspaceId: string,
+    userId: string,
+    dto: CustomerInputDto,
+  ): Promise<CustomerListRow> {
     const customer = this.customers.create({
       id: randomUUID(),
       workspaceId,
@@ -220,11 +226,22 @@ export class CustomersService {
     });
 
     const saved = await this.customers.save(customer);
+
+    this.audit.record({
+      workspaceId,
+      actorId: userId,
+      action: 'customer.created',
+      targetType: 'customer',
+      targetId: saved.id,
+      metadata: { name: saved.name, email: saved.email },
+    });
+
     return toCustomerRow(saved, EMPTY_METRICS);
   }
 
   async update(
     workspaceId: string,
+    userId: string,
     customerId: string,
     dto: CustomerInputDto,
   ): Promise<CustomerListRow> {
@@ -243,18 +260,37 @@ export class CustomersService {
     const saved = await this.customers.save(customer);
     const { rows } = await this.aggregate(workspaceId);
 
+    this.audit.record({
+      workspaceId,
+      actorId: userId,
+      action: 'customer.updated',
+      targetType: 'customer',
+      targetId: saved.id,
+      metadata: { name: saved.name, email: saved.email },
+    });
+
     return toCustomerRow(saved, rows.get(saved.id) ?? EMPTY_METRICS);
   }
 
-  async archive(workspaceId: string, customerId: string): Promise<void> {
-    await this.requireOwned(workspaceId, customerId);
+  async archive(workspaceId: string, userId: string, customerId: string): Promise<void> {
+    const customer = await this.requireOwned(workspaceId, customerId);
 
     await this.contacts.delete({ customerId });
     await this.customers.update({ id: customerId }, { archivedAt: new Date() });
+
+    this.audit.record({
+      workspaceId,
+      actorId: userId,
+      action: 'customer.archived',
+      targetType: 'customer',
+      targetId: customerId,
+      metadata: { name: customer.name, email: customer.email },
+    });
   }
 
   async addContact(
     workspaceId: string,
+    userId: string,
     customerId: string,
     dto: CustomerContactDto,
   ): Promise<CustomerContactView> {
@@ -270,11 +306,21 @@ export class CustomersService {
       }),
     );
 
+    this.audit.record({
+      workspaceId,
+      actorId: userId,
+      action: 'customer.contact_added',
+      targetType: 'customer',
+      targetId: customerId,
+      metadata: { name: contact.name, contactId: contact.id },
+    });
+
     return toContactView(contact);
   }
 
   async updateContact(
     workspaceId: string,
+    userId: string,
     customerId: string,
     contactId: string,
     dto: CustomerContactDto,
@@ -292,16 +338,43 @@ export class CustomersService {
       phone: dto.phone?.trim() || null,
     });
 
-    return toContactView(await this.contacts.save(contact));
+    const saved = await this.contacts.save(contact);
+
+    this.audit.record({
+      workspaceId,
+      actorId: userId,
+      action: 'customer.contact_updated',
+      targetType: 'customer',
+      targetId: customerId,
+      metadata: { name: saved.name, contactId: saved.id },
+    });
+
+    return toContactView(saved);
   }
 
-  async removeContact(workspaceId: string, customerId: string, contactId: string): Promise<void> {
+  async removeContact(
+    workspaceId: string,
+    userId: string,
+    customerId: string,
+    contactId: string,
+  ): Promise<void> {
     await this.requireOwned(workspaceId, customerId);
 
+    const contact = await this.contacts.findOne({ where: { id: contactId, customerId } });
     const result = await this.contacts.delete({ id: contactId, customerId });
+
     if (!result.affected) {
       throw new NotFoundException('PIC not found.');
     }
+
+    this.audit.record({
+      workspaceId,
+      actorId: userId,
+      action: 'customer.contact_removed',
+      targetType: 'customer',
+      targetId: customerId,
+      metadata: { name: contact?.name ?? null, contactId },
+    });
   }
 
   private async requireOwned(workspaceId: string, customerId: string): Promise<Customer> {

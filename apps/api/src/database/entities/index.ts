@@ -7,6 +7,7 @@ import {
   DocumentRelation,
   DocumentRevision,
 } from './document.entity';
+import { InvoiceFollowUp } from './follow-up.entity';
 import { Asset, Payment, PrintToken } from './payment.entity';
 import { AuditEvent, BackgroundJob, IdempotencyKey } from './system.entity';
 import { UnitOfMeasure } from './unit.entity';
@@ -30,6 +31,7 @@ export const entities = [
   DocumentNumberSequence,
   DocumentRelation,
   DocumentRevision,
+  InvoiceFollowUp,
   Payment,
   Asset,
   PrintToken,
@@ -54,6 +56,7 @@ export {
   DocumentRevision,
   DocumentTemplate,
   IdempotencyKey,
+  InvoiceFollowUp,
   Payment,
   PrintToken,
   Session,

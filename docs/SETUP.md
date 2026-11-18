@@ -201,7 +201,8 @@ Everything is under `/api/v1`.
 | Customers | `GET /customers`, `GET /customers/summary`, `GET /customers/:id`, `POST /customers`, `PATCH /customers/:id`, `DELETE /customers/:id`, `GET /customers/:id/contacts`, `POST /customers/:id/contacts`, `PATCH /customers/:id/contacts/:contactId`, `DELETE /customers/:id/contacts/:contactId` |
 | Items | `GET /items`, `GET /items/summary`, `GET /items/:id`, `POST /items`, `PATCH /items/:id`, `DELETE /items/:id` |
 | Units | `GET /units`, `POST /units`, `DELETE /units/:id` |
-| Documents | `GET /documents`, `GET /documents/summary`, `POST /documents`, `GET /documents/:id`, `PUT /documents/:id`, `POST /documents/:id/status`, `DELETE /documents/:id`, `GET /documents/:id/pdf` |
+| Documents | `GET /documents`, `GET /documents/summary`, `POST /documents`, `GET /documents/:id`, `PUT /documents/:id`, `POST /documents/:id/status`, `DELETE /documents/:id`, `GET /documents/:id/pdf`, `GET /documents/:id/follow-ups`, `POST /documents/:id/follow-ups`, `PATCH /documents/:id/follow-ups/:followUpId`, `DELETE /documents/:id/follow-ups/:followUpId` |
+| Audit | `GET /audit-events` (workspace activity log: sign-ins, creates, updates, deletes) |
 | Health | `GET /health/live`, `GET /health/ready` |
 
 Server messages are in Indonesian; the web app translates the ones it shows through

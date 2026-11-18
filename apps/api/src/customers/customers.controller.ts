@@ -61,7 +61,9 @@ export class CustomersController {
     @Req() request: AuthenticatedRequest,
     @Body() dto: CustomerInputDto,
   ): Promise<{ customer: CustomerListRow }> {
-    return { customer: await this.customers.create(request.auth!.workspace.id, dto) };
+    return {
+      customer: await this.customers.create(request.auth!.workspace.id, request.auth!.user.id, dto),
+    };
   }
 
   @Patch(':id')
@@ -70,13 +72,20 @@ export class CustomersController {
     @Param('id') id: string,
     @Body() dto: CustomerInputDto,
   ): Promise<{ customer: CustomerListRow }> {
-    return { customer: await this.customers.update(request.auth!.workspace.id, id, dto) };
+    return {
+      customer: await this.customers.update(
+        request.auth!.workspace.id,
+        request.auth!.user.id,
+        id,
+        dto,
+      ),
+    };
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async archive(@Req() request: AuthenticatedRequest, @Param('id') id: string): Promise<void> {
-    await this.customers.archive(request.auth!.workspace.id, id);
+    await this.customers.archive(request.auth!.workspace.id, request.auth!.user.id, id);
   }
 
   @Post(':id/contacts')
@@ -86,7 +95,12 @@ export class CustomersController {
     @Body() dto: CustomerContactDto,
   ): Promise<{ contact: CustomerContactView }> {
     return {
-      contact: await this.customers.addContact(request.auth!.workspace.id, id, dto),
+      contact: await this.customers.addContact(
+        request.auth!.workspace.id,
+        request.auth!.user.id,
+        id,
+        dto,
+      ),
     };
   }
 
@@ -98,7 +112,13 @@ export class CustomersController {
     @Body() dto: CustomerContactDto,
   ): Promise<{ contact: CustomerContactView }> {
     return {
-      contact: await this.customers.updateContact(request.auth!.workspace.id, id, contactId, dto),
+      contact: await this.customers.updateContact(
+        request.auth!.workspace.id,
+        request.auth!.user.id,
+        id,
+        contactId,
+        dto,
+      ),
     };
   }
 
@@ -109,6 +129,11 @@ export class CustomersController {
     @Param('id') id: string,
     @Param('contactId') contactId: string,
   ): Promise<void> {
-    await this.customers.removeContact(request.auth!.workspace.id, id, contactId);
+    await this.customers.removeContact(
+      request.auth!.workspace.id,
+      request.auth!.user.id,
+      id,
+      contactId,
+    );
   }
 }

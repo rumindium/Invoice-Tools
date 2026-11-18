@@ -46,7 +46,9 @@ export class ItemsController {
     @Req() request: AuthenticatedRequest,
     @Body() dto: ItemInputDto,
   ): Promise<{ item: ItemListRow }> {
-    return { item: await this.items.create(request.auth!.workspace.id, dto) };
+    return {
+      item: await this.items.create(request.auth!.workspace.id, request.auth!.user.id, dto),
+    };
   }
 
   @Patch(':id')
@@ -55,12 +57,14 @@ export class ItemsController {
     @Param('id') id: string,
     @Body() dto: ItemInputDto,
   ): Promise<{ item: ItemListRow }> {
-    return { item: await this.items.update(request.auth!.workspace.id, id, dto) };
+    return {
+      item: await this.items.update(request.auth!.workspace.id, request.auth!.user.id, id, dto),
+    };
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async archive(@Req() request: AuthenticatedRequest, @Param('id') id: string): Promise<void> {
-    await this.items.archive(request.auth!.workspace.id, id);
+    await this.items.archive(request.auth!.workspace.id, request.auth!.user.id, id);
   }
 }

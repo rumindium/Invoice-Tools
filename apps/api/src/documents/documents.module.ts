@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 import { CompaniesModule } from '../companies/companies.module';
 import {
@@ -9,6 +10,7 @@ import {
   Document,
   DocumentItem,
   DocumentNumberSequence,
+  InvoiceFollowUp,
 } from '../database/entities';
 import { DocumentsController } from './documents.controller';
 import { DocumentsService } from './documents.service';
@@ -21,9 +23,11 @@ import { DocumentsService } from './documents.service';
       Customer,
       CustomerContact,
       DocumentNumberSequence,
+      InvoiceFollowUp,
       AuditEvent,
     ]),
     AuthModule,
+    AuditModule,
     CompaniesModule,
   ],
   controllers: [DocumentsController],

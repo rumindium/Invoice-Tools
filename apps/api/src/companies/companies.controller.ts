@@ -40,7 +40,9 @@ export class CompaniesController {
     @Req() request: AuthenticatedRequest,
     @Body() dto: CompanyInputDto,
   ): Promise<CompanyResponse> {
-    return { company: await this.companies.create(request.auth!.workspace.id, dto) };
+    return {
+      company: await this.companies.create(request.auth!.workspace.id, request.auth!.user.id, dto),
+    };
   }
 
   @Patch(':id')
@@ -49,12 +51,19 @@ export class CompaniesController {
     @Param('id') id: string,
     @Body() dto: CompanyInputDto,
   ): Promise<CompanyResponse> {
-    return { company: await this.companies.update(request.auth!.workspace.id, id, dto) };
+    return {
+      company: await this.companies.update(
+        request.auth!.workspace.id,
+        request.auth!.user.id,
+        id,
+        dto,
+      ),
+    };
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async archive(@Req() request: AuthenticatedRequest, @Param('id') id: string): Promise<void> {
-    await this.companies.archive(request.auth!.workspace.id, id);
+    await this.companies.archive(request.auth!.workspace.id, request.auth!.user.id, id);
   }
 }

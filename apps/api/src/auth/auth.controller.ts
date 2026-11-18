@@ -92,7 +92,10 @@ export class AuthController {
   ): Promise<void> {
     const token = readSessionToken(request);
     if (token) {
-      await this.auth.logout(token);
+      await this.auth.logout(token, {
+        ip: request.ip,
+        userAgent: request.get('user-agent'),
+      });
     }
     response.clearCookie(SESSION_COOKIE_NAME, sessionCookieOptions());
   }
@@ -109,7 +112,10 @@ export class AuthController {
     @Body() dto: UpdateProfileDto,
     @Req() request: AuthenticatedRequest,
   ): Promise<AuthResponse> {
-    return this.auth.updateProfile(request.auth!.user.id, dto.displayName);
+    return this.auth.updateProfile(request.auth!.user.id, dto.displayName, {
+      ip: request.ip,
+      userAgent: request.get('user-agent'),
+    });
   }
 
   @Post('change-password')
@@ -123,6 +129,7 @@ export class AuthController {
       readSessionToken(request)!,
       dto.currentPassword,
       dto.newPassword,
+      { ip: request.ip, userAgent: request.get('user-agent') },
     );
   }
 

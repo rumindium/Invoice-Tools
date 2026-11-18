@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Put,
   Query,
@@ -17,8 +18,9 @@ import type { Response } from 'express';
 import type { AuthenticatedRequest } from '../auth/session.guard';
 import { SessionGuard } from '../auth/session.guard';
 import { DocumentsService } from './documents.service';
+import { FollowUpInputDto, FollowUpStatusDto } from './dto/follow-up.dto';
 import { ChangeStatusDto, InvoicePayloadDto, ListDocumentsQueryDto } from './dto/invoice.dto';
-import type { InvoiceListRow, InvoiceSummary, InvoiceView } from './views';
+import type { InvoiceFollowUpView, InvoiceListRow, InvoiceSummary, InvoiceView } from './views';
 
 @Controller('documents')
 @UseGuards(SessionGuard)
@@ -62,7 +64,12 @@ export class DocumentsController {
     @Body() payload: InvoicePayloadDto,
   ): Promise<{ invoice: InvoiceView }> {
     return {
-      invoice: await this.documents.update(request.auth!.workspace.id, id, payload),
+      invoice: await this.documents.update(
+        request.auth!.workspace.id,
+        request.auth!.user.id,
+        id,
+        payload,
+      ),
     };
   }
 
@@ -82,10 +89,67 @@ export class DocumentsController {
     };
   }
 
+  @Get(':id/follow-ups')
+  async listFollowUps(
+    @Req() request: AuthenticatedRequest,
+    @Param('id') id: string,
+  ): Promise<{ followUps: InvoiceFollowUpView[] }> {
+    return { followUps: await this.documents.listFollowUps(request.auth!.workspace.id, id) };
+  }
+
+  @Post(':id/follow-ups')
+  async addFollowUp(
+    @Req() request: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() dto: FollowUpInputDto,
+  ): Promise<{ followUp: InvoiceFollowUpView }> {
+    return {
+      followUp: await this.documents.addFollowUp(
+        request.auth!.workspace.id,
+        request.auth!.user.id,
+        id,
+        dto,
+      ),
+    };
+  }
+
+  @Patch(':id/follow-ups/:followUpId')
+  async changeFollowUpStatus(
+    @Req() request: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Param('followUpId') followUpId: string,
+    @Body() dto: FollowUpStatusDto,
+  ): Promise<{ followUp: InvoiceFollowUpView }> {
+    return {
+      followUp: await this.documents.changeFollowUpStatus(
+        request.auth!.workspace.id,
+        request.auth!.user.id,
+        id,
+        followUpId,
+        dto,
+      ),
+    };
+  }
+
+  @Delete(':id/follow-ups/:followUpId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async removeFollowUp(
+    @Req() request: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Param('followUpId') followUpId: string,
+  ): Promise<void> {
+    await this.documents.removeFollowUp(
+      request.auth!.workspace.id,
+      request.auth!.user.id,
+      id,
+      followUpId,
+    );
+  }
+
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Req() request: AuthenticatedRequest, @Param('id') id: string): Promise<void> {
-    await this.documents.remove(request.auth!.workspace.id, id);
+    await this.documents.remove(request.auth!.workspace.id, request.auth!.user.id, id);
   }
 
   @Get(':id/pdf')
