@@ -143,7 +143,14 @@ function drawInvoice(doc: PDFKit.PDFDocument, invoice: InvoiceView): void {
     .text(invoice.customer.name, PAGE_MARGIN, top + 13, { width: columnWidth });
 
   doc.font('Helvetica').fontSize(8.5).fillColor(MUTED);
+  const contact = invoice.customer.contact;
+  const contactLine = contact
+    ? `Attn. ${contact.name}${contact.jobTitle ? ` · ${contact.jobTitle}` : ''}${
+        contact.phone ? ` · ${contact.phone}` : ''
+      }`
+    : null;
   const customerLines = [
+    contactLine,
     invoice.customer.address,
     invoice.customer.email,
     invoice.customer.phone,

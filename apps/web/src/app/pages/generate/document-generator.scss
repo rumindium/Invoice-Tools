@@ -111,6 +111,34 @@
   grid-column: 1 / -1;
 }
 
+.field-hint {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.catalog-picker {
+  display: grid;
+  grid-template-columns: minmax(0, 260px) minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding: 16px 0 14px;
+}
+
+.catalog-hint {
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.catalog-hint a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
 .items-body {
   padding: 0 20px 18px;
 }
@@ -347,6 +375,14 @@
 
   .form-span-2 {
     grid-column: auto;
+  }
+
+  .catalog-picker {
+    grid-template-columns: 1fr;
+  }
+
+  .catalog-hint {
+    margin-top: 0;
   }
 
   .items-head {

@@ -1,0 +1,308 @@
+<section class="ui-page">
+  <header class="ui-page-head">
+    <div>
+      <p class="ui-eyebrow">Master data</p>
+      <h1>Customers</h1>
+      <p class="ui-sub">
+        Everyone you bill, with their contact details, PICs and invoice history in one place.
+      </p>
+    </div>
+    <div class="ui-actions">
+      <button class="ui-btn ui-btn-primary" type="button" (click)="openCreate()">
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.9"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        New customer
+      </button>
+    </div>
+  </header>
+
+  @if (actionError()) {
+  <div class="ui-alert" role="alert">
+    <span>{{ actionError() }}</span>
+    <button class="ui-link" type="button" (click)="actionError.set('')">Close</button>
+  </div>
+  } @if (editorOpen()) {
+  <section class="ui-card editor" aria-labelledby="customer-editor-heading">
+    <header class="ui-panel-head">
+      <div>
+        <h2 id="customer-editor-heading">{{ editingId() ? 'Edit customer' : 'New customer' }}</h2>
+        <p>Name and contact details used on invoices.</p>
+      </div>
+      <button class="ui-link" type="button" (click)="closeEditor()">Cancel</button>
+    </header>
+
+    <form class="editor-body" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      @if (formError()) {
+      <div class="ui-alert" role="alert"><span>{{ formError() }}</span></div>
+      }
+
+      <div class="editor-grid">
+        <label class="ui-field">
+          <span>Name</span>
+          <input class="ui-input" formControlName="name" placeholder="PT Example Indonesia" />
+          @if (form.controls.name.invalid && form.controls.name.touched) {
+          <small class="ui-field-error">Enter at least 2 characters.</small>
+          }
+        </label>
+
+        <label class="ui-field">
+          <span>Type</span>
+          <select class="ui-select" formControlName="type">
+            <option value="BUSINESS">Company</option>
+            <option value="INDIVIDUAL">Individual</option>
+          </select>
+        </label>
+
+        <label class="ui-field">
+          <span>Email</span>
+          <input
+            class="ui-input"
+            type="email"
+            formControlName="email"
+            placeholder="finance@company.com"
+          />
+        </label>
+
+        <label class="ui-field">
+          <span>Phone</span>
+          <input class="ui-input" formControlName="phone" placeholder="+62 21 1234 5678" />
+        </label>
+
+        <label class="ui-field editor-span-2">
+          <span>Billing address</span>
+          <input
+            class="ui-input"
+            formControlName="address"
+            placeholder="Street, city, postal code"
+          />
+        </label>
+
+        <label class="ui-field">
+          <span>Tax ID</span>
+          <input class="ui-input" formControlName="taxId" placeholder="NPWP" />
+        </label>
+
+        <label class="ui-field editor-span-2">
+          <span>Notes</span>
+          <textarea class="ui-textarea" rows="2" formControlName="notes"></textarea>
+        </label>
+      </div>
+
+      <div class="editor-actions">
+        <button class="ui-btn ui-btn-primary" type="submit" [disabled]="saving()">
+          {{ saving() ? 'Saving…' : editingId() ? 'Save changes' : 'Add customer' }}
+        </button>
+        <button class="ui-btn ui-btn-ghost" type="button" (click)="closeEditor()">Cancel</button>
+      </div>
+    </form>
+  </section>
+  }
+
+  <div class="kpi-grid">
+    <article class="kpi-card">
+      <span class="kpi-label">Customers</span>
+      <strong class="kpi-value">{{ summary()?.totalCustomers ?? 0 }}</strong>
+      <span class="kpi-detail">Saved in this workspace</span>
+    </article>
+    <article class="kpi-card">
+      <span class="kpi-label">New this month</span>
+      <strong class="kpi-value">{{ summary()?.newThisMonth ?? 0 }}</strong>
+      <span class="kpi-detail">Added since the 1st</span>
+    </article>
+    <article class="kpi-card">
+      <span class="kpi-label">With balance due</span>
+      <strong class="kpi-value">{{ summary()?.withOutstanding ?? 0 }}</strong>
+      <span class="kpi-detail">Open invoices on their account</span>
+    </article>
+    <article class="kpi-card">
+      <span class="kpi-label">Billed</span>
+      <strong class="kpi-value">{{ formatIdr(summary()?.billedTotal ?? 0) }}</strong>
+      <span class="kpi-detail">Issued and paid invoices</span>
+    </article>
+  </div>
+
+  <section class="ui-card chart-card" aria-labelledby="customer-chart-heading">
+    <header class="ui-panel-head">
+      <div>
+        <h2 id="customer-chart-heading">Billed per month</h2>
+        <p>Invoice totals for the last six months, across all customers.</p>
+      </div>
+    </header>
+    <div class="chart-body">
+      <app-bar-chart [points]="summary()?.chart ?? []" />
+    </div>
+  </section>
+
+  <section class="ui-card table-card" aria-labelledby="customer-list-heading">
+    <div class="table-toolbar">
+      <span class="toolbar-title" id="customer-list-heading">
+        {{ rows().length }} customer{{ rows().length === 1 ? '' : 's' }}
+      </span>
+      <label class="search-box">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <circle cx="11" cy="11" r="6.5" />
+          <path d="m16 16 4 4" />
+        </svg>
+        <input
+          type="search"
+          placeholder="Search customers…"
+          [value]="search()"
+          (input)="updateSearch($event)"
+          aria-label="Search customers"
+        />
+        @if (search()) {
+        <button
+          class="search-clear"
+          type="button"
+          aria-label="Clear search"
+          (click)="clearSearch()"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="m6 6 12 12M18 6 6 18" />
+          </svg>
+        </button>
+        }
+      </label>
+    </div>
+
+    @if (listError()) {
+    <div class="ui-empty">
+      <strong>Customers could not be loaded</strong>
+      <p>{{ listError() }}</p>
+    </div>
+    } @else if (loading() && rows().length === 0) {
+    <div class="ui-empty"><strong>Loading customers…</strong></div>
+    } @else if (rows().length === 0) {
+    <div class="ui-empty">
+      <strong>No customers yet</strong>
+      <p>Add a customer once and reuse their details on every invoice.</p>
+      <button class="ui-btn ui-btn-primary" type="button" (click)="openCreate()">
+        Add customer
+      </button>
+    </div>
+    } @else {
+    <div class="ui-table-wrap">
+      <table class="ui-table">
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Contact</th>
+            <th class="num">Invoices</th>
+            <th class="num">Billed</th>
+            <th class="num">Outstanding</th>
+            <th><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows(); track row.id) {
+          <tr>
+            <td>
+              <a class="customer-cell" [routerLink]="['/customers', row.id]">
+                <span class="avatar-mark" aria-hidden="true">{{ row.name.slice(0, 1) }}</span>
+                <span>
+                  <strong>{{ row.name }}</strong>
+                  <span class="ui-muted">{{ typeLabel(row.type) }}</span>
+                </span>
+              </a>
+            </td>
+            <td>
+              {{ row.email ?? '—' }} @if (row.phone) {
+              <span class="ui-muted">{{ row.phone }}</span>
+              }
+            </td>
+            <td class="num">{{ row.invoiceCount }}</td>
+            <td class="num ui-money">{{ formatIdr(row.billedTotal) }}</td>
+            <td class="num ui-money" [class.is-due]="row.outstandingTotal > 0">
+              {{ formatIdr(row.outstandingTotal) }}
+            </td>
+            <td class="row-action">
+              <button
+                class="row-link"
+                type="button"
+                title="Edit customer"
+                [attr.aria-label]="'Edit ' + row.name"
+                (click)="openEdit(row)"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M4 20h4l10-10a2.8 2.8 0 0 0-4-4L4 16v4z" />
+                  <path d="m13.5 6.5 4 4" />
+                </svg>
+              </button>
+              <a
+                class="row-link"
+                [routerLink]="['/customers', row.id]"
+                [attr.aria-label]="'Open ' + row.name"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="m9 6 6 6-6 6" />
+                </svg>
+              </a>
+              <button
+                class="row-link row-link-danger"
+                type="button"
+                title="Archive customer"
+                [attr.aria-label]="'Archive ' + row.name"
+                (click)="remove(row)"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"
+                  />
+                </svg>
+              </button>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+  </section>
+</section>

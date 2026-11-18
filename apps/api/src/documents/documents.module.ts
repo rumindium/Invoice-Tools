@@ -5,6 +5,7 @@ import { CompaniesModule } from '../companies/companies.module';
 import {
   AuditEvent,
   Customer,
+  CustomerContact,
   Document,
   DocumentItem,
   DocumentNumberSequence,
@@ -18,6 +19,7 @@ import { DocumentsService } from './documents.service';
       Document,
       DocumentItem,
       Customer,
+      CustomerContact,
       DocumentNumberSequence,
       AuditEvent,
     ]),

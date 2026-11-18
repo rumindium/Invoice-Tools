@@ -1,0 +1,384 @@
+<section class="ui-page">
+  <header class="ui-page-head">
+    <div>
+      <p class="ui-eyebrow">Master data</p>
+      <h1>Items</h1>
+      <p class="ui-sub">
+        Products and services you bill repeatedly, with their price, description and invoice usage.
+      </p>
+    </div>
+    @if (tab() === 'items') {
+    <div class="ui-actions">
+      <button class="ui-btn ui-btn-primary" type="button" (click)="openCreate()">
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.9"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        New item
+      </button>
+    </div>
+    }
+  </header>
+
+  <nav class="page-tabs" role="tablist" aria-label="Items and units of measure">
+    <button
+      class="page-tab"
+      type="button"
+      role="tab"
+      [class.is-active]="tab() === 'items'"
+      [attr.aria-selected]="tab() === 'items'"
+      (click)="setTab('items')"
+    >
+      Items
+    </button>
+    <button
+      class="page-tab"
+      type="button"
+      role="tab"
+      [class.is-active]="tab() === 'units'"
+      [attr.aria-selected]="tab() === 'units'"
+      (click)="setTab('units')"
+    >
+      Units of measure
+    </button>
+  </nav>
+
+  @if (tab() === 'units') {
+  <section class="ui-card units-card" aria-labelledby="units-heading">
+    <header class="ui-panel-head">
+      <div>
+        <h2 id="units-heading">Units of measure</h2>
+        <p>Built-in units plus the ones you add, all offered in the item form.</p>
+      </div>
+      <span class="toolbar-title"
+        >{{ units().length }} unit{{ units().length === 1 ? '' : 's' }}</span
+      >
+    </header>
+
+    <form class="unit-form" [formGroup]="unitForm" (ngSubmit)="addUnit()" novalidate>
+      <label class="ui-field">
+        <span>Add a custom unit</span>
+        <input class="ui-input" formControlName="name" placeholder="rim, bag, trip" />
+        @if (unitForm.controls.name.invalid && unitForm.controls.name.touched) {
+        <small class="ui-field-error">Enter a unit name of at most 20 characters.</small>
+        }
+      </label>
+      <button class="ui-btn ui-btn-primary" type="submit" [disabled]="unitSaving()">
+        {{ unitSaving() ? 'Adding…' : 'Add unit' }}
+      </button>
+    </form>
+
+    @if (unitError()) {
+    <div class="ui-alert unit-alert" role="alert">
+      <span>{{ unitError() }}</span>
+      <button class="ui-link" type="button" (click)="unitError.set('')">Close</button>
+    </div>
+    } @if (units().length === 0) {
+    <div class="ui-empty"><strong>Loading units…</strong></div>
+    } @else {
+    <ul class="unit-list">
+      @for (unit of units(); track unit.name) {
+      <li class="unit-row" [class.is-custom]="unit.isCustom">
+        <span class="unit-name">{{ unit.name }}</span>
+        <span class="unit-tag">{{ unit.isCustom ? 'Custom' : 'Built-in' }}</span>
+        @if (unit.id) {
+        <button
+          class="row-link row-link-danger"
+          type="button"
+          title="Remove unit"
+          [attr.aria-label]="'Remove ' + unit.name"
+          (click)="removeUnit(unit)"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path
+              d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"
+            />
+          </svg>
+        </button>
+        }
+      </li>
+      }
+    </ul>
+    }
+  </section>
+  } @else { @if (actionError()) {
+  <div class="ui-alert" role="alert">
+    <span>{{ actionError() }}</span>
+    <button class="ui-link" type="button" (click)="actionError.set('')">Close</button>
+  </div>
+  } @if (editorOpen()) {
+  <section class="ui-card editor" aria-labelledby="item-editor-heading">
+    <header class="ui-panel-head">
+      <div>
+        <h2 id="item-editor-heading">{{ editingId() ? 'Edit item' : 'New item' }}</h2>
+        <p>The name, price and description used on invoice lines.</p>
+      </div>
+      <button class="ui-link" type="button" (click)="closeEditor()">Cancel</button>
+    </header>
+
+    <form class="editor-body" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      @if (formError()) {
+      <div class="ui-alert" role="alert"><span>{{ formError() }}</span></div>
+      }
+
+      <div class="editor-grid">
+        <label class="ui-field">
+          <span>Name</span>
+          <input class="ui-input" formControlName="name" placeholder="Design retainer" />
+          @if (form.controls.name.invalid && form.controls.name.touched) {
+          <small class="ui-field-error">Enter at least 2 characters.</small>
+          }
+        </label>
+
+        <label class="ui-field">
+          <span>Kind</span>
+          <select class="ui-select" formControlName="kind">
+            <option value="SERVICE">Service</option>
+            <option value="PRODUCT">Product</option>
+          </select>
+        </label>
+
+        <label class="ui-field">
+          <span>Unit price (IDR)</span>
+          <input class="ui-input" type="number" min="0" step="1000" formControlName="unitPrice" />
+        </label>
+
+        <label class="ui-field">
+          <span>Unit of measure</span>
+          <select class="ui-select" formControlName="unit">
+            @for (unit of unitOptions(); track unit) {
+            <option [value]="unit">{{ unit }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="ui-field editor-span-2">
+          <span>Description</span>
+          <textarea class="ui-textarea" rows="2" formControlName="description"></textarea>
+        </label>
+
+        <label class="checkbox-field">
+          <input type="checkbox" formControlName="isActive" />
+          <span>Active — available when billing new work</span>
+        </label>
+      </div>
+
+      <div class="editor-actions">
+        <button class="ui-btn ui-btn-primary" type="submit" [disabled]="saving()">
+          {{ saving() ? 'Saving…' : editingId() ? 'Save changes' : 'Add item' }}
+        </button>
+        <button class="ui-btn ui-btn-ghost" type="button" (click)="closeEditor()">Cancel</button>
+      </div>
+    </form>
+  </section>
+  }
+
+  <div class="kpi-grid">
+    <article class="kpi-card">
+      <span class="kpi-label">Items</span>
+      <strong class="kpi-value">{{ summary()?.totalItems ?? 0 }}</strong>
+      <span class="kpi-detail">In your catalog</span>
+    </article>
+    <article class="kpi-card">
+      <span class="kpi-label">Active</span>
+      <strong class="kpi-value">{{ summary()?.activeItems ?? 0 }}</strong>
+      <span class="kpi-detail">Ready to bill</span>
+    </article>
+    <article class="kpi-card">
+      <span class="kpi-label">Used in invoices</span>
+      <strong class="kpi-value">{{ summary()?.usedItems ?? 0 }}</strong>
+      <span class="kpi-detail">Items with at least one line</span>
+    </article>
+    <article class="kpi-card">
+      <span class="kpi-label">Item revenue</span>
+      <strong class="kpi-value">{{ formatIdr(summary()?.itemRevenue ?? 0) }}</strong>
+      <span class="kpi-detail">Invoice lines matched to items</span>
+    </article>
+  </div>
+
+  <section class="ui-card chart-card" aria-labelledby="item-chart-heading">
+    <header class="ui-panel-head">
+      <div>
+        <h2 id="item-chart-heading">Item revenue per month</h2>
+        <p>Line totals for the last six months, across all items.</p>
+      </div>
+    </header>
+    <div class="chart-body">
+      <app-bar-chart [points]="summary()?.chart ?? []" />
+    </div>
+  </section>
+
+  <section class="ui-card table-card" aria-labelledby="item-list-heading">
+    <div class="table-toolbar">
+      <span class="toolbar-title" id="item-list-heading">
+        {{ rows().length }} item{{ rows().length === 1 ? '' : 's' }}
+      </span>
+      <label class="search-box">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <circle cx="11" cy="11" r="6.5" />
+          <path d="m16 16 4 4" />
+        </svg>
+        <input
+          type="search"
+          placeholder="Search items…"
+          [value]="search()"
+          (input)="updateSearch($event)"
+          aria-label="Search items"
+        />
+        @if (search()) {
+        <button
+          class="search-clear"
+          type="button"
+          aria-label="Clear search"
+          (click)="clearSearch()"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="m6 6 12 12M18 6 6 18" />
+          </svg>
+        </button>
+        }
+      </label>
+    </div>
+
+    @if (listError()) {
+    <div class="ui-empty">
+      <strong>Items could not be loaded</strong>
+      <p>{{ listError() }}</p>
+    </div>
+    } @else if (loading() && rows().length === 0) {
+    <div class="ui-empty"><strong>Loading items…</strong></div>
+    } @else if (rows().length === 0) {
+    <div class="ui-empty">
+      <strong>No items yet</strong>
+      <p>Save the products or services you bill most often so you can reuse their price.</p>
+      <button class="ui-btn ui-btn-primary" type="button" (click)="openCreate()">Add item</button>
+    </div>
+    } @else {
+    <div class="ui-table-wrap">
+      <table class="ui-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th class="num">Unit price</th>
+            <th class="num">Invoices</th>
+            <th class="num">Revenue</th>
+            <th>Last used</th>
+            <th><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows(); track row.id) {
+          <tr>
+            <td>
+              <a class="item-cell" [routerLink]="['/items', row.id]">
+                <span class="avatar-mark" aria-hidden="true">{{ row.name.slice(0, 1) }}</span>
+                <span>
+                  <strong>{{ row.name }}</strong>
+                  <span class="ui-muted">
+                    {{ kindLabel(row.kind) }}{{ row.isActive ? '' : ' · inactive' }}
+                  </span>
+                </span>
+              </a>
+            </td>
+            <td class="num ui-money">{{ formatIdr(row.unitPrice) }}</td>
+            <td class="num">{{ row.invoiceCount }}</td>
+            <td class="num ui-money">{{ formatIdr(row.revenue) }}</td>
+            <td class="date-cell">{{ formatDate(row.lastUsedAt) }}</td>
+            <td class="row-action">
+              <button
+                class="row-link"
+                type="button"
+                title="Edit item"
+                [attr.aria-label]="'Edit ' + row.name"
+                (click)="openEdit(row)"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M4 20h4l10-10a2.8 2.8 0 0 0-4-4L4 16v4z" />
+                  <path d="m13.5 6.5 4 4" />
+                </svg>
+              </button>
+              <a
+                class="row-link"
+                [routerLink]="['/items', row.id]"
+                [attr.aria-label]="'Open ' + row.name"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="m9 6 6 6-6 6" />
+                </svg>
+              </a>
+              <button
+                class="row-link row-link-danger"
+                type="button"
+                title="Archive item"
+                [attr.aria-label]="'Archive ' + row.name"
+                (click)="remove(row)"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"
+                  />
+                </svg>
+              </button>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+  </section>
+  }
+</section>

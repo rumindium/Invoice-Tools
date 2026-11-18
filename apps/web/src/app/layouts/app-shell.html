@@ -112,6 +112,37 @@
         </svg>
         Account
       </a>
+
+      <span class="nav-label nav-label-group">Master data</span>
+      <a class="nav-item" routerLink="/customers" routerLinkActive="is-active" (click)="closeNav()">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="9" cy="8" r="3.2" />
+          <path d="M3 19c0-3 2.7-5 6-5s6 2 6 5" />
+          <path d="M16 8.2a3 3 0 0 1 0 5.6M18 14.5c2 .7 3 2.2 3 4.5" />
+        </svg>
+        Customers
+      </a>
+      <a class="nav-item" routerLink="/items" routerLinkActive="is-active" (click)="closeNav()">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M12 3 4 7.5v9L12 21l8-4.5v-9L12 3z" />
+          <path d="M4 7.5 12 12l8-4.5M12 12v9" />
+        </svg>
+        Items
+      </a>
     </nav>
 
     <div class="sidebar-bottom">

@@ -1,0 +1,199 @@
+<section class="ui-page">
+  <header class="ui-page-head">
+    <div>
+      <a class="back-link" routerLink="/items">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M20 12H4M10 6l-6 6 6 6" />
+        </svg>
+        Items
+      </a>
+      <p class="ui-eyebrow">Item</p>
+      <h1>{{ item()?.name ?? 'Item' }}</h1>
+      <p class="ui-sub">Price, description and every invoice line that uses this item.</p>
+    </div>
+
+    @if (item()) {
+    <div class="detail-actions">
+      <button class="ui-btn ui-btn-ghost" type="button" (click)="openEdit()">Edit item</button>
+      <button class="ui-btn ui-btn-ghost" type="button" (click)="remove()">Archive</button>
+    </div>
+    }
+  </header>
+
+  @if (loadError()) {
+  <div class="ui-alert" role="alert">
+    <span>{{ loadError() }}</span>
+    <a class="ui-link" routerLink="/items">Back to items</a>
+  </div>
+  } @if (actionError()) {
+  <div class="ui-alert" role="alert">
+    <span>{{ actionError() }}</span>
+    <button class="ui-link" type="button" (click)="actionError.set('')">Close</button>
+  </div>
+  } @if (loading()) {
+  <div class="ui-card ui-empty"><strong>Loading item…</strong></div>
+  } @else if (item(); as current) {
+  <div class="kpi-grid">
+    <article class="kpi-card">
+      <span class="kpi-label">Invoices</span>
+      <strong class="kpi-value">{{ current.invoiceCount }}</strong>
+      <span class="kpi-detail">Invoices containing this item</span>
+    </article>
+    <article class="kpi-card">
+      <span class="kpi-label">Quantity sold</span>
+      <strong class="kpi-value">{{ current.quantitySold }}</strong>
+      <span class="kpi-detail">{{ current.unit }} billed so far</span>
+    </article>
+    <article class="kpi-card">
+      <span class="kpi-label">Revenue</span>
+      <strong class="kpi-value">{{ formatIdr(current.revenue) }}</strong>
+      <span class="kpi-detail">Line totals after tax</span>
+    </article>
+    <article class="kpi-card">
+      <span class="kpi-label">Last used</span>
+      <strong class="kpi-value">{{ formatDate(current.lastUsedAt) }}</strong>
+      <span class="kpi-detail">{{ kindLabel(current.kind) }}</span>
+    </article>
+  </div>
+
+  <section class="ui-card profile-card" aria-labelledby="item-profile-heading">
+    <header class="ui-panel-head">
+      <div>
+        <h2 id="item-profile-heading">Item details</h2>
+        <p>{{ kindLabel(current.kind) }}{{ current.isActive ? ' · active' : ' · inactive' }}</p>
+      </div>
+      @if (!editing()) {
+      <button class="ui-link" type="button" (click)="openEdit()">Edit</button>
+      }
+    </header>
+
+    @if (editing()) {
+    <form class="profile-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      @if (formError()) {
+      <div class="ui-alert" role="alert"><span>{{ formError() }}</span></div>
+      }
+
+      <div class="profile-grid">
+        <label class="ui-field">
+          <span>Name</span>
+          <input class="ui-input" formControlName="name" />
+          @if (form.controls.name.invalid && form.controls.name.touched) {
+          <small class="ui-field-error">Enter at least 2 characters.</small>
+          }
+        </label>
+        <label class="ui-field">
+          <span>Kind</span>
+          <select class="ui-select" formControlName="kind">
+            <option value="SERVICE">Service</option>
+            <option value="PRODUCT">Product</option>
+          </select>
+        </label>
+        <label class="ui-field">
+          <span>Unit price (IDR)</span>
+          <input class="ui-input" type="number" min="0" step="1000" formControlName="unitPrice" />
+        </label>
+        <label class="ui-field">
+          <span>Unit of measure</span>
+          <select class="ui-select" formControlName="unit">
+            @for (unit of unitOptions(); track unit) {
+            <option [value]="unit">{{ unit }}</option>
+            }
+          </select>
+        </label>
+        <label class="ui-field profile-span-2">
+          <span>Description</span>
+          <textarea class="ui-textarea" rows="2" formControlName="description"></textarea>
+        </label>
+        <label class="checkbox-field">
+          <input type="checkbox" formControlName="isActive" />
+          <span>Active — available when billing new work</span>
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button class="ui-btn ui-btn-primary" type="submit" [disabled]="saving()">
+          {{ saving() ? 'Saving…' : 'Save changes' }}
+        </button>
+        <button class="ui-btn ui-btn-ghost" type="button" (click)="closeEdit()">Cancel</button>
+      </div>
+    </form>
+    } @else {
+    <dl class="profile-list">
+      <div>
+        <dt>Unit price</dt>
+        <dd>{{ formatIdr(current.unitPrice) }} / {{ current.unit }}</dd>
+      </div>
+      <div>
+        <dt>Status</dt>
+        <dd>{{ current.isActive ? 'Active' : 'Inactive' }}</dd>
+      </div>
+      <div class="profile-span-2">
+        <dt>Description</dt>
+        <dd>{{ current.description ?? '—' }}</dd>
+      </div>
+      <div>
+        <dt>Added</dt>
+        <dd>{{ formatDate(current.createdAt) }}</dd>
+      </div>
+    </dl>
+    }
+  </section>
+
+  <section class="ui-card invoice-card" aria-labelledby="item-invoices-heading">
+    <header class="ui-panel-head">
+      <div>
+        <h2 id="item-invoices-heading">Invoices using this item</h2>
+        <p>The last 50 invoices with a matching line.</p>
+      </div>
+      <a class="ui-link" routerLink="/invoices/new">Create invoice</a>
+    </header>
+
+    @if ((detail()?.invoices ?? []).length === 0) {
+    <div class="ui-empty">
+      <strong>No invoices yet</strong>
+      <p>Invoices with a line named “{{ current.name }}” will appear here.</p>
+    </div>
+    } @else {
+    <div class="ui-table-wrap">
+      <table class="ui-table invoice-table">
+        <thead>
+          <tr>
+            <th>Invoice</th>
+            <th>Customer</th>
+            <th>Date</th>
+            <th class="num">Total</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (invoice of detail()?.invoices ?? []; track invoice.id) {
+          <tr>
+            <td>
+              <a class="invoice-cell" [routerLink]="['/documents', invoice.id]">
+                <strong>{{ invoice.number ?? 'Draft' }}</strong>
+              </a>
+            </td>
+            <td>{{ invoice.customerName }}</td>
+            <td class="date-cell">{{ formatDate(invoice.issueDate) }}</td>
+            <td class="num ui-money">{{ formatIdr(invoice.total) }}</td>
+            <td>
+              <span [class]="statusClass(displayStatus(invoice))">
+                {{ statusLabel[displayStatus(invoice)] }}
+              </span>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+  </section>
+  }
+</section>

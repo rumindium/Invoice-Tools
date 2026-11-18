@@ -5,6 +5,7 @@ import { DocumentStatus } from '../database/entities/enums';
 export interface InvoiceItemView {
   id: string;
   position: number;
+  catalogItemId: string | null;
   name: string;
   description: string | null;
   unit: string;
@@ -18,12 +19,20 @@ export interface InvoiceItemView {
   lineTotal: number;
 }
 
+export interface InvoiceContactView {
+  id: string;
+  name: string;
+  jobTitle: string | null;
+  phone: string | null;
+}
+
 export interface InvoiceCustomerView {
   id: string | null;
   name: string;
   email: string | null;
   address: string | null;
   phone: string | null;
+  contact: InvoiceContactView | null;
 }
 
 export interface InvoiceCompanyView {
@@ -142,6 +151,7 @@ export function toInvoiceItemView(item: DocumentItem): InvoiceItemView {
   return {
     id: item.id,
     position: item.position,
+    catalogItemId: item.catalogItemId,
     name: item.itemName,
     description: item.description,
     unit: item.unit,
@@ -165,6 +175,7 @@ export function toInvoiceCustomerView(document: DocumentWithCustomer): InvoiceCu
       ? ((document.customer.billingAddress as { line1?: string }).line1 ?? null)
       : null,
     phone: document.customer?.phone ?? null,
+    contact: null,
   };
 
   return parseSnapshot<InvoiceCustomerView>(document.customerSnapshot, fallback);

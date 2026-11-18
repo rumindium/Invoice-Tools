@@ -1,13 +1,15 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'node:crypto';
-import { Brackets, EntityManager, IsNull, Repository } from 'typeorm';
+import { Brackets, EntityManager, In, IsNull, Repository } from 'typeorm';
 import { CompaniesService } from '../companies/companies.service';
 import { Decimal } from '../database/decimal.transformer';
 import {
   AuditEvent,
+  CatalogItem,
   Company,
   Customer,
+  CustomerContact,
   Document,
   DocumentItem,
   DocumentNumberSequence,
@@ -20,7 +22,12 @@ import {
   TaxMode,
 } from '../database/entities/enums';
 import { calculateDocument } from './calculation';
-import { ChangeStatusDto, InvoicePayloadDto, ListDocumentsQueryDto } from './dto/invoice.dto';
+import {
+  ChangeStatusDto,
+  InvoiceCustomerDto,
+  InvoicePayloadDto,
+  ListDocumentsQueryDto,
+} from './dto/invoice.dto';
 import { renderInvoicePdf } from './pdf/invoice-pdf';
 import {
   DocumentWithCustomer,
@@ -45,8 +52,28 @@ const ALLOWED_TRANSITIONS: Record<string, Array<'ISSUED' | 'PAID' | 'VOID'>> = {
   VOID: [],
 };
 
+interface ContactSnapshot {
+  id: string;
+  name: string;
+  jobTitle: string | null;
+  phone: string | null;
+}
+
+interface CustomerSnapshot extends Record<string, unknown> {
+  id: string | null;
+  name: string;
+  email: string | null;
+  address: string | null;
+  phone: string | null;
+  contact: ContactSnapshot | null;
+}
+
 function toDateOnly(value: string): string {
   return value.slice(0, 10);
+}
+
+function customerAddress(customer: Customer): string | null {
+  return (customer.billingAddress as { line1?: string } | null)?.line1 ?? null;
 }
 
 @Injectable()
@@ -201,14 +228,6 @@ export class DocumentsService {
       chargesTaxRate: payload.chargesTaxRate,
     });
 
-    const customerSnapshot = {
-      id: null,
-      name: payload.customer.name.trim(),
-      email: payload.customer.email?.trim().toLowerCase() ?? null,
-      address: payload.customer.address?.trim() ?? null,
-      phone: payload.customer.phone?.trim() ?? null,
-    };
-
     const issuerSnapshot = {
       id: company.id,
       name: company.displayName?.trim() || company.legalName,
@@ -219,7 +238,12 @@ export class DocumentsService {
     };
 
     const documentId = await this.documents.manager.transaction(async (manager) => {
-      const customer = await this.resolveCustomer(manager, workspaceId, customerSnapshot);
+      const { customer, snapshot: customerSnapshot } = await this.resolveInvoiceCustomer(
+        manager,
+        workspaceId,
+        payload.customer,
+      );
+      const catalogItemIds = await this.resolveCatalogItemIds(manager, workspaceId, payload.items);
       const documentNumber = await this.nextDocumentNumber(manager, company, issueDate);
 
       const created = await manager.getRepository(Document).save(
@@ -266,7 +290,7 @@ export class DocumentsService {
         }),
       );
 
-      await this.saveItems(manager, created.id, calculation.items);
+      await this.saveItems(manager, created.id, calculation.items, catalogItemIds);
       await manager.getRepository(AuditEvent).save(
         manager.getRepository(AuditEvent).create({
           workspaceId,
@@ -309,16 +333,13 @@ export class DocumentsService {
       chargesTaxRate: payload.chargesTaxRate,
     });
 
-    const customerSnapshot = {
-      id: document.customerId,
-      name: payload.customer.name.trim(),
-      email: payload.customer.email?.trim().toLowerCase() ?? null,
-      address: payload.customer.address?.trim() ?? null,
-      phone: payload.customer.phone?.trim() ?? null,
-    };
-
     await this.documents.manager.transaction(async (manager) => {
-      const customer = await this.resolveCustomer(manager, workspaceId, customerSnapshot);
+      const { customer, snapshot: customerSnapshot } = await this.resolveInvoiceCustomer(
+        manager,
+        workspaceId,
+        payload.customer,
+      );
+      const catalogItemIds = await this.resolveCatalogItemIds(manager, workspaceId, payload.items);
 
       await manager.getRepository(DocumentItem).delete({ documentId });
 
@@ -356,7 +377,7 @@ export class DocumentsService {
 
       await manager.getRepository(Document).save(document);
 
-      await this.saveItems(manager, documentId, calculation.items);
+      await this.saveItems(manager, documentId, calculation.items, catalogItemIds);
     });
 
     return this.get(workspaceId, documentId);
@@ -506,15 +527,17 @@ export class DocumentsService {
     manager: EntityManager,
     documentId: string,
     items: ReturnType<typeof calculateDocument>['items'],
+    catalogItemIds: Array<string | null>,
   ): Promise<void> {
     const repository = manager.getRepository(DocumentItem);
 
     await repository.save(
-      items.map((item) =>
+      items.map((item, index) =>
         repository.create({
           id: randomUUID(),
           documentId,
           position: item.position,
+          catalogItemId: catalogItemIds[index] ?? null,
           itemName: item.name,
           description: item.description,
           unit: item.unit,
@@ -530,6 +553,102 @@ export class DocumentsService {
         }),
       ),
     );
+  }
+
+  /** An id from another workspace, or from an archived item, is dropped instead of failing the save. */
+  private async resolveCatalogItemIds(
+    manager: EntityManager,
+    workspaceId: string,
+    items: InvoicePayloadDto['items'],
+  ): Promise<Array<string | null>> {
+    const ids = [
+      ...new Set(
+        items.map((item) => item.catalogItemId?.trim()).filter((id): id is string => Boolean(id)),
+      ),
+    ];
+
+    if (ids.length === 0) {
+      return items.map(() => null);
+    }
+
+    const found = await manager.getRepository(CatalogItem).find({
+      where: { workspaceId, id: In(ids), archivedAt: IsNull() },
+      select: { id: true },
+    });
+    const valid = new Set(found.map((item) => item.id));
+
+    return items.map((item) => {
+      const id = item.catalogItemId?.trim();
+      return id && valid.has(id) ? id : null;
+    });
+  }
+
+  private async resolveInvoiceCustomer(
+    manager: EntityManager,
+    workspaceId: string,
+    customer: InvoiceCustomerDto,
+  ): Promise<{ customer: Customer; snapshot: CustomerSnapshot }> {
+    const repository = manager.getRepository(Customer);
+    const name = customer.name.trim();
+    const email = customer.email?.trim().toLowerCase() || null;
+    const address = customer.address?.trim() || null;
+    const phone = customer.phone?.trim() || null;
+    const customerId = customer.id?.trim();
+
+    if (!customerId) {
+      const created = await this.resolveCustomer(manager, workspaceId, {
+        id: null,
+        name,
+        email,
+        address,
+        phone,
+      });
+
+      return {
+        customer: created,
+        snapshot: { id: created.id, name, email, address, phone, contact: null },
+      };
+    }
+
+    const existing = await repository.findOne({
+      where: { id: customerId, workspaceId, archivedAt: IsNull() },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Customer not found.');
+    }
+
+    let contact: ContactSnapshot | null = null;
+    const contactId = customer.contactId?.trim();
+
+    if (contactId) {
+      const found = await manager.getRepository(CustomerContact).findOne({
+        where: { id: contactId, customerId: existing.id },
+      });
+
+      if (!found) {
+        throw new NotFoundException('PIC not found.');
+      }
+
+      contact = {
+        id: found.id,
+        name: found.name,
+        jobTitle: found.jobTitle,
+        phone: found.phone,
+      };
+    }
+
+    return {
+      customer: existing,
+      snapshot: {
+        id: existing.id,
+        name,
+        email: email ?? existing.email,
+        address: address ?? customerAddress(existing),
+        phone: phone ?? existing.phone,
+        contact,
+      },
+    };
   }
 
   private async resolveCustomer(

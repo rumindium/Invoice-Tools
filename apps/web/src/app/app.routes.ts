@@ -69,6 +69,29 @@ export const routes: Routes = [
         title: 'Create Invoice — Rumindium Invoice',
       },
       {
+        path: 'customers',
+        loadComponent: () =>
+          import('./pages/customers/customers').then((page) => page.CustomersPage),
+        title: 'Customers — Rumindium Invoice',
+      },
+      {
+        path: 'customers/:id',
+        loadComponent: () =>
+          import('./pages/customers/customer-detail').then((page) => page.CustomerDetailPage),
+        title: 'Customer — Rumindium Invoice',
+      },
+      {
+        path: 'items',
+        loadComponent: () => import('./pages/items/items').then((page) => page.ItemsPage),
+        title: 'Items — Rumindium Invoice',
+      },
+      {
+        path: 'items/:id',
+        loadComponent: () =>
+          import('./pages/items/item-detail').then((page) => page.ItemDetailPage),
+        title: 'Item — Rumindium Invoice',
+      },
+      {
         path: 'company',
         loadComponent: () => import('./pages/company/company').then((page) => page.CompanyPage),
         title: 'Company — Rumindium Invoice',

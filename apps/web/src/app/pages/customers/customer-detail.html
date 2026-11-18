@@ -1,0 +1,318 @@
+<section class="ui-page">
+  <header class="ui-page-head">
+    <div>
+      <a class="back-link" routerLink="/customers">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M20 12H4M10 6l-6 6 6 6" />
+        </svg>
+        Customers
+      </a>
+      <p class="ui-eyebrow">Customer</p>
+      <h1>{{ customer()?.name ?? 'Customer' }}</h1>
+      <p class="ui-sub">Profile, PICs and every invoice billed to this customer.</p>
+    </div>
+
+    @if (customer()) {
+    <div class="detail-actions">
+      <button class="ui-btn ui-btn-ghost" type="button" (click)="openEdit()">Edit profile</button>
+      <a class="ui-btn ui-btn-ghost" routerLink="/invoices/new">New invoice</a>
+      <button class="ui-btn ui-btn-ghost" type="button" (click)="removeCustomer()">Archive</button>
+    </div>
+    }
+  </header>
+
+  @if (loadError()) {
+  <div class="ui-alert" role="alert">
+    <span>{{ loadError() }}</span>
+    <a class="ui-link" routerLink="/customers">Back to customers</a>
+  </div>
+  } @if (actionError()) {
+  <div class="ui-alert" role="alert">
+    <span>{{ actionError() }}</span>
+    <button class="ui-link" type="button" (click)="actionError.set('')">Close</button>
+  </div>
+  } @if (loading()) {
+  <div class="ui-card ui-empty"><strong>Loading customer…</strong></div>
+  } @else if (customer(); as c) {
+  <div class="kpi-grid">
+    <article class="kpi-card">
+      <span class="kpi-label">Invoices</span>
+      <strong class="kpi-value">{{ stats()?.invoiceCount ?? 0 }}</strong>
+      <span class="kpi-detail">Created for this customer</span>
+    </article>
+    <article class="kpi-card">
+      <span class="kpi-label">Billed</span>
+      <strong class="kpi-value">{{ formatIdr(stats()?.billedTotal ?? 0) }}</strong>
+      <span class="kpi-detail">Issued and paid</span>
+    </article>
+    <article class="kpi-card">
+      <span class="kpi-label">Paid</span>
+      <strong class="kpi-value">{{ formatIdr(stats()?.paidTotal ?? 0) }}</strong>
+      <span class="kpi-detail">Settled invoices</span>
+    </article>
+    <article class="kpi-card">
+      <span class="kpi-label">Outstanding</span>
+      <strong class="kpi-value">{{ formatIdr(stats()?.outstandingTotal ?? 0) }}</strong>
+      <span class="kpi-detail">
+        Last invoice {{ formatDate(stats()?.lastInvoiceDate ?? null) }}
+      </span>
+    </article>
+  </div>
+
+  <div class="detail-grid">
+    <div class="stack">
+      <section class="ui-card profile-card" aria-labelledby="profile-heading">
+        <header class="ui-panel-head">
+          <div>
+            <h2 id="profile-heading">Customer profile</h2>
+            <p>{{ typeLabel(c.type) }} · added {{ formatDate(c.createdAt) }}</p>
+          </div>
+          @if (!editing()) {
+          <button class="ui-link" type="button" (click)="openEdit()">Edit</button>
+          }
+        </header>
+
+        @if (editing()) {
+        <form class="profile-form" [formGroup]="form" (ngSubmit)="saveProfile()" novalidate>
+          @if (formError()) {
+          <div class="ui-alert" role="alert"><span>{{ formError() }}</span></div>
+          }
+
+          <div class="profile-grid">
+            <label class="ui-field">
+              <span>Name</span>
+              <input class="ui-input" formControlName="name" />
+              @if (form.controls.name.invalid && form.controls.name.touched) {
+              <small class="ui-field-error">Enter at least 2 characters.</small>
+              }
+            </label>
+            <label class="ui-field">
+              <span>Type</span>
+              <select class="ui-select" formControlName="type">
+                <option value="BUSINESS">Company</option>
+                <option value="INDIVIDUAL">Individual</option>
+              </select>
+            </label>
+            <label class="ui-field">
+              <span>Email</span>
+              <input class="ui-input" type="email" formControlName="email" />
+            </label>
+            <label class="ui-field">
+              <span>Phone</span>
+              <input class="ui-input" formControlName="phone" />
+            </label>
+            <label class="ui-field profile-span-2">
+              <span>Billing address</span>
+              <input class="ui-input" formControlName="address" />
+            </label>
+            <label class="ui-field">
+              <span>Tax ID</span>
+              <input class="ui-input" formControlName="taxId" />
+            </label>
+            <label class="ui-field profile-span-2">
+              <span>Notes</span>
+              <textarea class="ui-textarea" rows="2" formControlName="notes"></textarea>
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button class="ui-btn ui-btn-primary" type="submit" [disabled]="saving()">
+              {{ saving() ? 'Saving…' : 'Save profile' }}
+            </button>
+            <button class="ui-btn ui-btn-ghost" type="button" (click)="closeEdit()">Cancel</button>
+          </div>
+        </form>
+        } @else {
+        <dl class="profile-list">
+          <div>
+            <dt>Email</dt>
+            <dd>{{ c.email ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt>Phone</dt>
+            <dd>{{ c.phone ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt>Billing address</dt>
+            <dd>{{ c.address ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt>Tax ID</dt>
+            <dd>{{ c.taxId ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt>Notes</dt>
+            <dd>{{ c.notes ?? '—' }}</dd>
+          </div>
+        </dl>
+        }
+      </section>
+
+      <section class="ui-card contacts-card" aria-labelledby="contacts-heading">
+        <header class="ui-panel-head">
+          <div>
+            <h2 id="contacts-heading">PIC contacts</h2>
+            <p>People at this customer you talk to: name, job title and phone.</p>
+          </div>
+          @if (!contactEditorOpen()) {
+          <button class="ui-link" type="button" (click)="openContactCreate()">Add PIC</button>
+          }
+        </header>
+
+        @if (contactEditorOpen()) {
+        <form class="contact-form" [formGroup]="contactForm" (ngSubmit)="saveContact()" novalidate>
+          @if (contactError()) {
+          <div class="ui-alert" role="alert"><span>{{ contactError() }}</span></div>
+          }
+
+          <div class="contact-grid">
+            <label class="ui-field">
+              <span>PIC name</span>
+              <input class="ui-input" formControlName="name" placeholder="Budi Santoso" />
+              @if (contactForm.controls.name.invalid && contactForm.controls.name.touched) {
+              <small class="ui-field-error">Enter at least 2 characters.</small>
+              }
+            </label>
+            <label class="ui-field">
+              <span>Job title</span>
+              <input class="ui-input" formControlName="jobTitle" placeholder="Finance Manager" />
+            </label>
+            <label class="ui-field">
+              <span>Phone</span>
+              <input class="ui-input" formControlName="phone" placeholder="+62 812 3456 7890" />
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button class="ui-btn ui-btn-primary" type="submit" [disabled]="contactSaving()">
+              {{ contactSaving() ? 'Saving…' : editingContactId() ? 'Save PIC' : 'Add PIC' }}
+            </button>
+            <button class="ui-btn ui-btn-ghost" type="button" (click)="closeContactEditor()">
+              Cancel
+            </button>
+          </div>
+        </form>
+        } @if (c.contacts.length === 0 && !contactEditorOpen()) {
+        <div class="ui-empty">
+          <strong>No PIC yet</strong>
+          <p>Add the person this customer wants you to contact.</p>
+          <button class="ui-btn ui-btn-primary" type="button" (click)="openContactCreate()">
+            Add PIC
+          </button>
+        </div>
+        } @else if (c.contacts.length > 0) {
+        <ul class="contact-list">
+          @for (contact of c.contacts; track contact.id) {
+          <li>
+            <span class="contact-avatar" aria-hidden="true">{{ contact.name.slice(0, 1) }}</span>
+            <div class="contact-body">
+              <strong>{{ contact.name }}</strong>
+              <span class="contact-meta">
+                {{ contact.jobTitle ?? 'No job title' }}{{ contact.phone ? ' · ' + contact.phone :
+                '' }}
+              </span>
+            </div>
+            <div class="contact-actions">
+              <button
+                class="row-link"
+                type="button"
+                title="Edit PIC"
+                [attr.aria-label]="'Edit ' + contact.name"
+                (click)="openContactEdit(contact.id)"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M4 20h4l10-10a2.8 2.8 0 0 0-4-4L4 16v4z" />
+                  <path d="m13.5 6.5 4 4" />
+                </svg>
+              </button>
+              <button
+                class="row-link row-link-danger"
+                type="button"
+                title="Remove PIC"
+                [attr.aria-label]="'Remove ' + contact.name"
+                (click)="removeContact(contact.id, contact.name)"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="m6 6 12 12M18 6 6 18" />
+                </svg>
+              </button>
+            </div>
+          </li>
+          }
+        </ul>
+        }
+      </section>
+    </div>
+
+    <aside class="stack">
+      <section class="ui-card history-card" aria-labelledby="history-heading">
+        <header class="ui-panel-head">
+          <div>
+            <h2 id="history-heading">Invoice history</h2>
+            <p>The last 50 invoices billed to this customer.</p>
+          </div>
+        </header>
+
+        @if (detail()?.invoices?.length === 0) {
+        <div class="ui-empty">
+          <strong>No invoices yet</strong>
+          <p>Invoices created for this customer will appear here.</p>
+        </div>
+        } @else {
+        <div class="ui-table-wrap">
+          <table class="ui-table history-table">
+            <thead>
+              <tr>
+                <th>Invoice</th>
+                <th class="num">Total</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (invoice of detail()?.invoices ?? []; track invoice.id) {
+              <tr>
+                <td>
+                  <a class="invoice-cell" [routerLink]="['/documents', invoice.id]">
+                    <strong>{{ invoice.number ?? 'Draft' }}</strong>
+                    <span class="ui-muted">{{ formatDate(invoice.issueDate) }}</span>
+                  </a>
+                </td>
+                <td class="num ui-money">{{ formatIdr(invoice.total) }}</td>
+                <td>
+                  <span [class]="statusClass(displayStatus(invoice))">
+                    {{ statusLabel[displayStatus(invoice)] }}
+                  </span>
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        }
+      </section>
+    </aside>
+  </div>
+  }
+</section>

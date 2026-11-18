@@ -198,6 +198,9 @@ Everything is under `/api/v1`.
 |---|---|
 | Auth | `POST /auth/register`, `POST /auth/verify-email`, `POST /auth/verify-email/resend`, `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `PATCH /auth/me`, `POST /auth/change-password`, `POST /auth/forgot-password`, `POST /auth/reset-password` |
 | Company | `GET /companies`, `GET /companies/current`, `POST /companies`, `PATCH /companies/:id`, `DELETE /companies/:id` |
+| Customers | `GET /customers`, `GET /customers/summary`, `GET /customers/:id`, `POST /customers`, `PATCH /customers/:id`, `DELETE /customers/:id`, `GET /customers/:id/contacts`, `POST /customers/:id/contacts`, `PATCH /customers/:id/contacts/:contactId`, `DELETE /customers/:id/contacts/:contactId` |
+| Items | `GET /items`, `GET /items/summary`, `GET /items/:id`, `POST /items`, `PATCH /items/:id`, `DELETE /items/:id` |
+| Units | `GET /units`, `POST /units`, `DELETE /units/:id` |
 | Documents | `GET /documents`, `GET /documents/summary`, `POST /documents`, `GET /documents/:id`, `PUT /documents/:id`, `POST /documents/:id/status`, `DELETE /documents/:id`, `GET /documents/:id/pdf` |
 | Health | `GET /health/live`, `GET /health/ready` |
 

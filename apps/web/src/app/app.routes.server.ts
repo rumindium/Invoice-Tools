@@ -9,5 +9,9 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'documents/**', renderMode: RenderMode.Client },
   { path: 'invoices/**', renderMode: RenderMode.Client },
   { path: 'company', renderMode: RenderMode.Client },
+  { path: 'customers', renderMode: RenderMode.Client },
+  { path: 'customers/**', renderMode: RenderMode.Client },
+  { path: 'items', renderMode: RenderMode.Client },
+  { path: 'items/**', renderMode: RenderMode.Client },
   { path: '**', renderMode: RenderMode.Prerender },
 ];

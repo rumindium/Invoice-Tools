@@ -1,4 +1,14 @@
-import { Column, CreateDateColumn, Entity, Index, PrimaryColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { decimalTransformer, Decimal } from '../decimal.transformer';
 import { CatalogKind, CustomerType } from './enums';
 
@@ -55,6 +65,39 @@ export class Customer {
 
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz', precision: 6 })
   updatedAt!: Date;
+
+  @OneToMany(() => CustomerContact, (contact) => contact.customer)
+  contacts!: CustomerContact[];
+}
+
+/** The people a customer asks you to deal with (PIC): name, job title and phone. */
+@Entity({ name: 'customer_contacts' })
+export class CustomerContact {
+  @PrimaryColumn({ type: 'text' })
+  id!: string;
+
+  @Index()
+  @Column({ name: 'customer_id', type: 'text' })
+  customerId!: string;
+
+  @Column({ type: 'text' })
+  name!: string;
+
+  @Column({ name: 'job_title', type: 'text', nullable: true })
+  jobTitle!: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  phone!: string | null;
+
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz', precision: 6 })
+  createdAt!: Date;
+
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz', precision: 6 })
+  updatedAt!: Date;
+
+  @ManyToOne(() => Customer, (customer) => customer.contacts, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'customer_id' })
+  customer!: Customer;
 }
 
 @Entity({ name: 'catalog_items' })

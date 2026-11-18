@@ -76,6 +76,43 @@
         </header>
 
         <div class="form-body form-grid form-grid-2">
+          <label class="ui-field form-span-2">
+            <span>Customer</span>
+            <select
+              class="ui-select"
+              formControlName="customerId"
+              (change)="onCustomerChange($event)"
+            >
+              <option value="">Choose a saved customer (optional)</option>
+              @for (customer of customers(); track customer.id) {
+              <option [value]="customer.id">{{ customerLabel(customer) }}</option>
+              }
+            </select>
+            <small class="field-hint">
+              Pick a customer to fill in the details below, or type a new one.
+            </small>
+          </label>
+          @if (contacts().length) {
+          <label class="ui-field form-span-2">
+            <span>PIC</span>
+            <select
+              class="ui-select"
+              formControlName="contactId"
+              (change)="onContactChange($event)"
+            >
+              <option value="">No specific PIC</option>
+              @for (contact of contacts(); track contact.id) {
+              <option [value]="contact.id">{{ contactLabel(contact) }}</option>
+              }
+            </select>
+            @if (selectedContact(); as contact) {
+            <small class="field-hint">
+              {{ contact.jobTitle || 'Person in charge' }}{{ contact.phone ? ' · ' + contact.phone :
+              '' }}
+            </small>
+            }
+          </label>
+          }
           <label class="ui-field">
             <span>Customer name</span>
             <input
@@ -99,7 +136,15 @@
             <small class="ui-field-error">Enter a valid email address.</small>
             }
           </label>
-          <label class="ui-field form-span-2">
+          <label class="ui-field">
+            <span>Phone</span>
+            <input
+              class="ui-input"
+              formControlName="customerPhone"
+              placeholder="+62 812 3456 7890"
+            />
+          </label>
+          <label class="ui-field">
             <span>Address</span>
             <input
               class="ui-input"
@@ -120,6 +165,23 @@
         </header>
 
         <div class="items-body">
+          <div class="catalog-picker">
+            <label class="ui-field">
+              <span>Add from items</span>
+              <select class="ui-select" (change)="addFromCatalog($event)">
+                <option value="">Choose a saved item…</option>
+                @for (item of catalogItems(); track item.id) {
+                <option [value]="item.id">{{ itemLabel(item) }}</option>
+                }
+              </select>
+            </label>
+            <p class="catalog-hint">
+              @if (catalogItems().length) { Picking an item adds a line with its name and price. }
+              @else { No active items yet. <a routerLink="/items">Add items to master data</a> to
+              reuse them here. }
+            </p>
+          </div>
+
           <div class="items-head" aria-hidden="true">
             <span>Description</span>
             <span>Qty</span>

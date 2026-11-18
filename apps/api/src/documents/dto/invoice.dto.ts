@@ -28,6 +28,11 @@ export const INVOICE_STATUSES = [
 ] as const;
 
 export class InvoiceItemDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  catalogItemId?: string;
+
   @IsString()
   @MinLength(1, { message: 'Item description is required.' })
   @MaxLength(200)
@@ -81,6 +86,16 @@ export class InvoiceItemDto {
 }
 
 export class InvoiceCustomerDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  id?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  contactId?: string;
+
   @IsString()
   @MinLength(2, { message: 'Customer name minimal 2 karakter.' })
   @MaxLength(160)

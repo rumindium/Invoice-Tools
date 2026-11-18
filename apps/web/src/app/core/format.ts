@@ -6,6 +6,17 @@ export function formatIdr(value: number): string {
   }).format(value);
 }
 
+export function formatIdrCompact(value: number): string {
+  if (value === 0) return 'Rp 0';
+
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'IDR',
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
 export function formatMoney(value: number, currency = 'IDR'): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',

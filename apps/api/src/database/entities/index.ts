@@ -1,5 +1,5 @@
 import { Company, DocumentTemplate } from './company.entity';
-import { CatalogItem, Customer } from './customer.entity';
+import { CatalogItem, Customer, CustomerContact } from './customer.entity';
 import {
   Document,
   DocumentItem,
@@ -9,6 +9,7 @@ import {
 } from './document.entity';
 import { Asset, Payment, PrintToken } from './payment.entity';
 import { AuditEvent, BackgroundJob, IdempotencyKey } from './system.entity';
+import { UnitOfMeasure } from './unit.entity';
 import { AuthToken, Session, User } from './user.entity';
 import { Workspace, WorkspaceMember } from './workspace.entity';
 
@@ -21,7 +22,9 @@ export const entities = [
   Company,
   DocumentTemplate,
   Customer,
+  CustomerContact,
   CatalogItem,
+  UnitOfMeasure,
   Document,
   DocumentItem,
   DocumentNumberSequence,
@@ -43,6 +46,7 @@ export {
   CatalogItem,
   Company,
   Customer,
+  CustomerContact,
   Document,
   DocumentItem,
   DocumentNumberSequence,
@@ -53,6 +57,7 @@ export {
   Payment,
   PrintToken,
   Session,
+  UnitOfMeasure,
   User,
   Workspace,
   WorkspaceMember,

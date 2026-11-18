@@ -11,6 +11,8 @@ const PAGE_TITLES: Record<string, string> = {
   '/invoices/new': 'New Invoice',
   '/company': 'Company',
   '/account': 'Account',
+  '/customers': 'Customers',
+  '/items': 'Items',
 };
 
 @Component({
@@ -39,6 +41,8 @@ export class AppShell {
     if (known) return known;
     if (url.startsWith('/documents/')) return 'Invoice';
     if (url.startsWith('/invoices/')) return 'New Invoice';
+    if (url.startsWith('/customers/')) return 'Customer';
+    if (url.startsWith('/items/')) return 'Item';
 
     return 'Dashboard';
   });

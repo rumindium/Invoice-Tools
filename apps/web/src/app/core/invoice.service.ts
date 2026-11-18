@@ -24,6 +24,7 @@ export interface InvoiceListRow {
 export interface InvoiceItem {
   id: string;
   position: number;
+  catalogItemId: string | null;
   name: string;
   description: string | null;
   unit: string;
@@ -56,6 +57,12 @@ export interface Invoice {
     email: string | null;
     address: string | null;
     phone: string | null;
+    contact: {
+      id: string;
+      name: string;
+      jobTitle: string | null;
+      phone: string | null;
+    } | null;
   };
   company: {
     id: string;
@@ -114,6 +121,7 @@ export interface InvoiceSummary {
 }
 
 export interface InvoiceItemPayload {
+  catalogItemId?: string;
   name: string;
   description?: string;
   unit?: string;
@@ -125,6 +133,8 @@ export interface InvoiceItemPayload {
 export interface InvoicePayload {
   companyId?: string;
   customer: {
+    id?: string;
+    contactId?: string;
     name: string;
     email?: string;
     address?: string;

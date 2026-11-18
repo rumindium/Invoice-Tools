@@ -97,6 +97,11 @@
           <span>{{ inv.customer.email }}</span>
           } @if (inv.customer.phone) {
           <span>{{ inv.customer.phone }}</span>
+          } @if (inv.customer.contact; as contact) {
+          <span class="paper-contact">
+            Attn. {{ contact.name }}{{ contact.jobTitle ? ' · ' + contact.jobTitle : '' }}{{
+            contact.phone ? ' · ' + contact.phone : '' }}
+          </span>
           }
         </div>
         <dl class="paper-dates">
