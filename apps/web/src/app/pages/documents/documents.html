@@ -3,10 +3,7 @@
     <div>
       <p class="ui-eyebrow">Invoice</p>
       <h1>My invoices</h1>
-      <p class="ui-sub">
-        All invoices in one place. This list still uses sample data until the invoice backend is
-        connected.
-      </p>
+      <p class="ui-sub">Every invoice saved in this workspace, with its PDF ready to download.</p>
     </div>
     <div class="ui-actions">
       <a class="ui-btn ui-btn-primary" routerLink="/invoices/new">
@@ -27,36 +24,28 @@
     </div>
   </header>
 
+  @if (actionError()) {
+  <div class="ui-alert" role="alert">
+    <span>{{ actionError() }}</span>
+    <button class="ui-link" type="button" (click)="actionError.set('')">Close</button>
+  </div>
+  }
+
   <section class="ui-card documents-card" aria-labelledby="documents-heading">
     <div class="documents-toolbar">
       <span class="toolbar-title">Invoice list</span>
 
-      <label class="search-box">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.8"
-          stroke-linecap="round"
-          aria-hidden="true"
-        >
-          <circle cx="11" cy="11" r="6.5" />
-          <path d="m16 16 4 4" />
-        </svg>
-        <input
-          type="search"
-          placeholder="Search by number or customer…"
-          [value]="search()"
-          (input)="updateSearch($event)"
-          aria-label="Search invoices"
-        />
-        @if (search()) {
-        <button
-          class="search-clear"
-          type="button"
-          aria-label="Clear search"
-          (click)="clearSearch()"
-        >
+      <div class="toolbar-controls">
+        <label class="status-filter">
+          <span class="sr-only">Filter by status</span>
+          <select class="ui-select" [value]="status()" (change)="updateStatus($event)">
+            @for (filter of filters; track filter.value) {
+            <option [value]="filter.value">{{ filter.label }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="search-box">
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -65,28 +54,59 @@
             stroke-linecap="round"
             aria-hidden="true"
           >
-            <path d="m6 6 12 12M18 6 6 18" />
+            <circle cx="11" cy="11" r="6.5" />
+            <path d="m16 16 4 4" />
           </svg>
-        </button>
-        }
-      </label>
+          <input
+            type="search"
+            placeholder="Search by number or customer…"
+            [value]="search()"
+            (input)="updateSearch($event)"
+            aria-label="Search invoices"
+          />
+          @if (search()) {
+          <button
+            class="search-clear"
+            type="button"
+            aria-label="Clear search"
+            (click)="clearSearch()"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="m6 6 12 12M18 6 6 18" />
+            </svg>
+          </button>
+          }
+        </label>
+      </div>
     </div>
 
     <div class="documents-meta">
       <span id="documents-heading">
-        {{ filtered().length }} invoice{{ filtered().length === 1 ? '' : 's' }} @if (search()) { for
-        “{{ search() }}” }
+        {{ rows().length }} invoice{{ rows().length === 1 ? '' : 's' }} @if (search()) { for “{{
+        search() }}” }
       </span>
-      <span class="documents-hint">Sample data · not connected to a backend</span>
+      <span class="documents-hint">Saved in this workspace</span>
     </div>
 
-    @if (filtered().length === 0) {
+    @if (loadError()) {
     <div class="ui-empty">
-      <strong>No matching invoices</strong>
-      <p>Try another keyword or reset the search.</p>
-      <button class="ui-btn ui-btn-ghost" type="button" (click)="clearSearch()">
-        Reset search
-      </button>
+      <strong>Invoices could not be loaded</strong>
+      <p>Check that the API is running, then reload this page.</p>
+    </div>
+    } @else if (loading() && rows().length === 0) {
+    <div class="ui-empty"><strong>Loading invoices…</strong></div>
+    } @else if (rows().length === 0) {
+    <div class="ui-empty">
+      <strong>No invoices yet</strong>
+      <p>Create your first invoice and it will appear here with a downloadable PDF.</p>
+      <a class="ui-btn ui-btn-primary" routerLink="/invoices/new">Create invoice</a>
     </div>
     } @else {
     <div class="ui-table-wrap">
@@ -98,30 +118,54 @@
             <th>Date</th>
             <th>Total</th>
             <th>Status</th>
-            <th><span class="sr-only">Action</span></th>
+            <th><span class="sr-only">Actions</span></th>
           </tr>
         </thead>
         <tbody>
-          @for (doc of filtered(); track doc.id) {
+          @for (doc of rows(); track doc.id) {
           <tr>
             <td>
-              <span class="doc-cell">
+              <a class="doc-cell" [routerLink]="['/documents', doc.id]">
                 <span class="kind-mark" aria-hidden="true">I</span>
                 <span>
-                  <strong>Invoice</strong>
-                  <span class="ui-muted">{{ doc.number }}</span>
+                  <strong>{{ doc.number ?? 'Draft' }}</strong>
+                  <span class="ui-muted">Invoice</span>
                 </span>
-              </span>
+              </a>
             </td>
-            <td>{{ doc.customer }}</td>
+            <td>{{ doc.customerName }}</td>
             <td class="date-cell">{{ formatDate(doc.issueDate) }}</td>
-            <td class="ui-money">{{ formatIdr(doc.total) }}</td>
-            <td><span [class]="statusClass(doc.status)">{{ statusLabel[doc.status] }}</span></td>
+            <td class="ui-money">{{ formatMoney(doc.total, doc.currency) }}</td>
+            <td>
+              <span [class]="statusClass(displayStatus(doc))"
+                >{{ statusLabel[displayStatus(doc)] }}</span
+              >
+            </td>
             <td class="row-action">
+              <button
+                class="row-link"
+                type="button"
+                title="Download PDF"
+                [attr.aria-label]="'Download PDF for ' + (doc.number ?? 'invoice')"
+                (click)="download(doc)"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 4v11M8 11l4 4 4-4" />
+                  <path d="M5 19h14" />
+                </svg>
+              </button>
               <a
                 class="row-link"
-                routerLink="/invoices/new"
-                [attr.aria-label]="'Open ' + doc.number"
+                [routerLink]="['/documents', doc.id]"
+                [attr.aria-label]="'Open ' + (doc.number ?? 'invoice')"
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -134,6 +178,29 @@
                   <path d="m9 6 6 6-6 6" />
                 </svg>
               </a>
+              @if (canDelete(doc)) {
+              <button
+                class="row-link row-link-danger"
+                type="button"
+                title="Delete invoice"
+                [attr.aria-label]="'Delete ' + (doc.number ?? 'invoice')"
+                (click)="remove(doc)"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"
+                  />
+                </svg>
+              </button>
+              }
             </td>
           </tr>
           }

@@ -4,8 +4,8 @@
       <p class="ui-eyebrow">Dashboard</p>
       <h1>{{ greeting() }}, {{ firstName() }}</h1>
       <p class="ui-sub">
-        This is an overview of {{ workspace()?.name ?? 'your workspace' }}. All numbers below are
-        sample data until the invoice backend is connected.
+        This is an overview of {{ workspace()?.name ?? 'your workspace' }}, taken from the invoices
+        saved on the server.
       </p>
     </div>
     <div class="ui-actions">
@@ -29,7 +29,7 @@
   </header>
 
   <div class="stats">
-    @for (stat of stats; track stat.label) {
+    @for (stat of stats(); track stat.label) {
     <article class="stat-card">
       <span class="stat-icon" [class]="'stat-icon stat-icon-' + stat.tone" aria-hidden="true">
         @switch (stat.icon) { @case ('documents') {
@@ -128,10 +128,10 @@
             </tr>
           </thead>
           <tbody>
-            @for (doc of recent; track doc.id) {
+            @for (doc of recent(); track doc.id) {
             <tr>
               <td>
-                <a class="doc-link" routerLink="/invoices/new">
+                <a class="doc-link" [routerLink]="['/documents', doc.id]">
                   <span class="kind-mark" aria-hidden="true">I</span>
                   <span>
                     <strong>Invoice</strong>
@@ -143,6 +143,12 @@
               <td class="date-cell">{{ formatDate(doc.issueDate) }}</td>
               <td class="ui-money">{{ formatIdr(doc.total) }}</td>
               <td><span [class]="statusClass(doc.status)">{{ statusLabel[doc.status] }}</span></td>
+            </tr>
+            } @empty {
+            <tr>
+              <td colspan="5" class="recent-empty">
+                No invoices yet. <a class="ui-link" routerLink="/invoices/new">Create one</a>.
+              </td>
             </tr>
             }
           </tbody>

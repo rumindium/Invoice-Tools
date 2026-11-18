@@ -1,11 +1,11 @@
 import type { Response } from 'express';
 import { describe, expect, it, vi } from 'vitest';
-import type { PrismaService } from '../prisma/prisma.service';
+import type { DataSource } from 'typeorm';
 import { HealthController } from './health.controller';
 
 function createController(query: () => Promise<unknown>): HealthController {
-  const prisma = { $queryRaw: vi.fn(query) } as unknown as PrismaService;
-  return new HealthController(prisma);
+  const dataSource = { query: vi.fn(query) } as unknown as DataSource;
+  return new HealthController(dataSource);
 }
 
 describe('HealthController', () => {

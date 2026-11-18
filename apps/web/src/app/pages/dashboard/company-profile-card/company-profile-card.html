@@ -16,7 +16,7 @@
       >
         <path d="M4 7h16v12H4zM8 7V5h8v2M8 12h8" />
       </svg>
-      Local
+      Invoice details
     </span>
   </header>
 
@@ -52,7 +52,7 @@
       <button class="logo-remove" type="button" (click)="removeLogo()">Remove logo</button>
       }
 
-      <p class="logo-hint">PNG, JPG, or WebP · max 1.5 MB</p>
+      <p class="logo-hint">PNG, JPG, or WebP · max 1 MB</p>
       @if (logoError()) {
       <p class="logo-error" role="alert">{{ logoError() }}</p>
       }
@@ -105,13 +105,15 @@
       <p class="profile-message profile-message-error" role="alert">{{ saveError() }}</p>
       } @if (saved()) {
       <p class="profile-message profile-message-success" role="status">
-        Company profile saved locally.
+        Company profile saved. New invoices will use these details.
       </p>
       }
 
       <div class="company-actions">
-        <button class="ui-btn ui-btn-primary" type="submit">Save profile</button>
-        <span>Saved in this browser, not the cloud.</span>
+        <button class="ui-btn ui-btn-primary" type="submit" [disabled]="saving()">
+          {{ saving() ? 'Saving…' : 'Save profile' }}
+        </button>
+        <span>Used on every invoice and its PDF.</span>
       </div>
     </form>
   </div>

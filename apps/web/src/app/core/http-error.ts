@@ -10,6 +10,19 @@ const MESSAGE_TRANSLATIONS: Record<string, string> = {
   'Password maksimal 128 karakter.': 'Password must be at most 128 characters.',
   'Sesi tidak ditemukan.': 'Session not found.',
   'Sesi sudah berakhir.': 'Your session has expired.',
+  'Customer name minimal 2 karakter.': 'Customer name must be at least 2 characters.',
+  'Company name minimal 2 karakter.': 'Company name must be at least 2 characters.',
+  'Company name maksimal 160 karakter.': 'Company name must be at most 160 characters.',
+  'Address maksimal 400 karakter.': 'Address must be at most 400 characters.',
+  'Phone maksimal 40 karakter.': 'Phone must be at most 40 characters.',
+  'Logo terlalu besar.': 'The logo is too large.',
+  'Currency harus kode ISO tiga huruf.': 'Currency must be a three-letter ISO code.',
+  'Invoice date tidak valid.': 'Enter a valid invoice date.',
+  'Due date tidak valid.': 'Enter a valid due date.',
+  'Quantity must be greater than zero.': 'Quantity must be greater than zero.',
+  'Unit price cannot be negative.': 'Unit price cannot be negative.',
+  'Add at least one item.': 'Add at least one item.',
+  'Unsupported invoice status.': 'Unsupported invoice status.',
 };
 
 function translate(message: string): string {

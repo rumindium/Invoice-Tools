@@ -82,7 +82,21 @@
           <path d="M15 3v5h4M5 8v11a2 2 0 0 0 2 2h8" />
         </svg>
         My Invoices
-        <span class="nav-count">{{ invoiceCount }}</span>
+        <span class="nav-count">{{ invoiceCount() }}</span>
+      </a>
+      <a class="nav-item" routerLink="/company" routerLinkActive="is-active" (click)="closeNav()">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M4 7h16v12H4z" />
+          <path d="M8 7V5h8v2M8 12h8" />
+        </svg>
+        Company
       </a>
     </nav>
 

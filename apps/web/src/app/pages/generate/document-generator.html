@@ -16,20 +16,22 @@
       </a>
       <p class="ui-eyebrow">Invoice</p>
       <h1>{{ config.title }}</h1>
-      <p class="ui-sub">
-        {{ config.description }} This page is still a demo and does not save to the server.
-      </p>
+      <p class="ui-sub">{{ config.description }}</p>
     </div>
-    <span class="document-pill">{{ config.number }}</span>
+    <span class="document-pill">{{ config.number || 'New invoice' }}</span>
   </header>
 
-  @if (saved()) {
-  <div class="ui-alert ui-alert-success" role="status">
-    <span
-      ><strong>Invoice saved as a local draft.</strong> The data has not been sent to the
-      backend.</span
-    >
-    <button class="ui-link" type="button" (click)="dismissSaved()">Close</button>
+  @if (saveError()) {
+  <div class="ui-alert" role="alert">
+    <span>{{ saveError() }}</span>
+    <button class="ui-link" type="button" (click)="saveError.set('')">Close</button>
+  </div>
+  } @if (companyMissing()) {
+  <div class="ui-alert" role="status">
+    <span>
+      <strong>Add your company details first.</strong> An invoice needs a seller name and address.
+    </span>
+    <a class="ui-link" routerLink="/company">Open company profile</a>
   </div>
   }
 
@@ -46,7 +48,12 @@
         <div class="form-body form-grid form-grid-3">
           <label class="ui-field">
             <span>Invoice number</span>
-            <input class="ui-input" formControlName="documentNumber" readonly />
+            <input
+              class="ui-input"
+              formControlName="documentNumber"
+              placeholder="Generated on save"
+              readonly
+            />
           </label>
           <label class="ui-field">
             <span>{{ config.dateLabel }}</span>
@@ -243,11 +250,14 @@
             <strong>{{ formatIdr(totals().total) }}</strong>
           </div>
           <p class="summary-hint">
-            Demo mode: this draft is not saved to the database and does not create an official
-            number.
+            Saving stores the invoice in My invoices. The server recalculates every total.
           </p>
-          <button class="ui-btn ui-btn-primary summary-submit" type="submit">
-            {{ config.submitLabel }}
+          <button
+            class="ui-btn ui-btn-primary summary-submit"
+            type="submit"
+            [disabled]="saving() || companyMissing()"
+          >
+            {{ saving() ? 'Saving…' : config.submitLabel }}
           </button>
           <a class="ui-btn ui-btn-ghost summary-cancel" routerLink="/documents">Cancel</a>
         </div>
@@ -255,7 +265,10 @@
 
       <section class="ui-card summary-note">
         <span class="summary-note-mark" aria-hidden="true">i</span>
-        <p>Customer, item, and tax data will be saved once the invoice backend is available.</p>
+        <p>
+          The invoice number is generated automatically for your company. A PDF copy is available
+          from My invoices.
+        </p>
       </section>
     </aside>
   </form>

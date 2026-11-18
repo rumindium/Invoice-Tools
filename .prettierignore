@@ -4,5 +4,5 @@ dist/
 coverage/
 docs/
 *.md
-prisma/migrations/
+apps/api/src/database/schema/
 package-lock.json

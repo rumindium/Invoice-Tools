@@ -15,26 +15,26 @@
     "dev": "concurrently --names api,web --prefix-colors blue,green \"npm run dev:api\" \"npm run dev:web\"",
     "dev:api": "npm run start:dev --workspace @rumindium/api",
     "dev:web": "npm run start --workspace @rumindium/web",
-    "build": "npm run db:generate && npm run build --workspace @rumindium/api && npm run build --workspace @rumindium/web",
-    "typecheck": "npm run db:generate && npm run typecheck --workspace @rumindium/api && npm run typecheck --workspace @rumindium/web",
+    "build": "npm run build --workspace @rumindium/api && npm run build --workspace @rumindium/web",
+    "typecheck": "npm run typecheck --workspace @rumindium/api && npm run typecheck --workspace @rumindium/web",
     "lint": "eslint . && prettier --check .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "test": "npm run test --workspace @rumindium/api",
-    "db:generate": "prisma generate",
-    "db:validate": "prisma validate",
-    "db:migrate": "prisma migrate deploy",
-    "db:migrate:dev": "prisma migrate dev"
+    "db:migrate": "npm run build --workspace @rumindium/api && npm run db:migrate --workspace @rumindium/api",
+    "db:migrate:revert": "npm run db:migrate:revert --workspace @rumindium/api",
+    "db:migrate:show": "npm run db:migrate:show --workspace @rumindium/api",
+    "db:migrate:generate": "npm run build --workspace @rumindium/api && npm run db:migrate:generate --workspace @rumindium/api"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@nestjs/platform-express": "^11.2.10",
     "angular-eslint": "^22.7.0",
     "concurrently": "^10.0.7",
     "eslint": "^10.15.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.14.0",
     "prettier": "^3.8.1",
-    "prisma": "6.19.3",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.73.0"
   }

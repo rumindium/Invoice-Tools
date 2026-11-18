@@ -1,10 +1,11 @@
 import { Controller, Get, HttpStatus, Res } from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
 import type { Response } from 'express';
-import { PrismaService } from '../prisma/prisma.service';
+import { DataSource } from 'typeorm';
 
 @Controller('health')
 export class HealthController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
 
   @Get('live')
   live() {
@@ -20,7 +21,7 @@ export class HealthController {
   @Get('ready')
   async ready(@Res({ passthrough: true }) response: Response) {
     try {
-      await this.prisma.$queryRaw`SELECT 1`;
+      await this.dataSource.query('SELECT 1');
       return {
         status: 'ok',
         dependencies: { database: 'up' },

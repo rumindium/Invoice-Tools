@@ -38,10 +38,21 @@ export const routes: Routes = [
         title: 'My Invoices — Rumindium Invoice',
       },
       {
+        path: 'documents/:id',
+        loadComponent: () =>
+          import('./pages/invoices/invoice-detail').then((page) => page.InvoiceDetailPage),
+        title: 'Invoice — Rumindium Invoice',
+      },
+      {
         path: 'invoices/new',
         loadComponent: () =>
           import('./pages/generate/document-generator').then((page) => page.DocumentGeneratorPage),
         title: 'Create Invoice — Rumindium Invoice',
+      },
+      {
+        path: 'company',
+        loadComponent: () => import('./pages/company/company').then((page) => page.CompanyPage),
+        title: 'Company — Rumindium Invoice',
       },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],

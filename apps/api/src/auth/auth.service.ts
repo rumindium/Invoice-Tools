@@ -1,7 +1,9 @@
 import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
-import { Prisma, WorkspaceRole } from '@prisma/client';
+import { InjectRepository } from '@nestjs/typeorm';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { PrismaService } from '../prisma/prisma.service';
+import { Repository } from 'typeorm';
+import { Session, User, Workspace, WorkspaceMember } from '../database/entities';
+import { WorkspaceRole } from '../database/entities/enums';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { hashPassword, verifyPassword } from './password';
@@ -45,18 +47,32 @@ function toWorkspaceView(workspace: { id: string; name: string }): WorkspaceView
   return { id: workspace.id, name: workspace.name };
 }
 
-function hashToken(token: string): Uint8Array<ArrayBuffer> {
-  return Uint8Array.from(createHash('sha256').update(token).digest());
+function hashToken(token: string): Buffer {
+  return createHash('sha256').update(token).digest();
+}
+
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: string }).code === '23505'
+  );
 }
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(User) private readonly users: Repository<User>,
+    @InjectRepository(Session) private readonly sessions: Repository<Session>,
+    @InjectRepository(Workspace) private readonly workspaces: Repository<Workspace>,
+    @InjectRepository(WorkspaceMember) private readonly members: Repository<WorkspaceMember>,
+  ) {}
 
   async register(dto: RegisterDto, meta: SessionMeta): Promise<IssuedSession> {
     const email = dto.email.trim().toLowerCase();
     const displayName = dto.displayName.trim();
-    const existing = await this.prisma.user.findUnique({ where: { email } });
+    const existing = await this.users.findOne({ where: { email } });
 
     if (existing) {
       throw new ConflictException('Email sudah terdaftar.');
@@ -64,35 +80,34 @@ export class AuthService {
 
     const passwordHash = await hashPassword(dto.password);
     const userId = randomUUID();
-    const workspaceId = randomUUID();
 
     try {
-      const { user, workspace } = await this.prisma.$transaction(async (tx) => {
-        const createdUser = await tx.user.create({
-          data: {
+      const { user, workspace } = await this.members.manager.transaction(async (manager) => {
+        const createdUser = await manager.getRepository(User).save(
+          manager.getRepository(User).create({
             id: userId,
             subject: `local:${userId}`,
             email,
             displayName,
             passwordHash,
-          },
-        });
+          }),
+        );
 
-        const createdWorkspace = await tx.workspace.create({
-          data: {
-            id: workspaceId,
+        const createdWorkspace = await manager.getRepository(Workspace).save(
+          manager.getRepository(Workspace).create({
+            id: randomUUID(),
             name: `Workspace ${displayName}`,
             ownerId: userId,
-          },
-        });
+          }),
+        );
 
-        await tx.workspaceMember.create({
-          data: {
-            workspaceId,
+        await manager.getRepository(WorkspaceMember).save(
+          manager.getRepository(WorkspaceMember).create({
+            workspaceId: createdWorkspace.id,
             userId,
             role: WorkspaceRole.OWNER,
-          },
-        });
+          }),
+        );
 
         return { user: createdUser, workspace: createdWorkspace };
       });
@@ -104,7 +119,7 @@ export class AuthService {
         ...session,
       };
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      if (isUniqueViolation(error)) {
         throw new ConflictException('Email sudah terdaftar.');
       }
       throw error;
@@ -113,7 +128,7 @@ export class AuthService {
 
   async login(dto: LoginDto, meta: SessionMeta): Promise<IssuedSession> {
     const email = dto.email.trim().toLowerCase();
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const user = await this.users.findOne({ where: { email } });
 
     if (!user?.passwordHash || !(await verifyPassword(dto.password, user.passwordHash))) {
       throw new UnauthorizedException('Email atau password salah.');
@@ -130,14 +145,14 @@ export class AuthService {
   }
 
   async getSession(token: string): Promise<AuthResponse | null> {
-    const session = await this.prisma.session.findUnique({
+    const session = await this.sessions.findOne({
       where: { tokenHash: hashToken(token) },
-      include: { user: true },
+      relations: { user: true },
     });
 
     if (!session || session.expiresAt.getTime() <= Date.now()) {
       if (session) {
-        await this.prisma.session.delete({ where: { id: session.id } }).catch(() => undefined);
+        await this.sessions.delete({ id: session.id }).catch(() => undefined);
       }
       return null;
     }
@@ -150,7 +165,7 @@ export class AuthService {
   }
 
   async logout(token: string): Promise<void> {
-    await this.prisma.session.deleteMany({ where: { tokenHash: hashToken(token) } });
+    await this.sessions.delete({ tokenHash: hashToken(token) });
   }
 
   private async createSession(
@@ -160,48 +175,48 @@ export class AuthService {
     const token = randomBytes(32).toString('base64url');
     const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
 
-    await this.prisma.session.create({
-      data: {
+    await this.sessions.save(
+      this.sessions.create({
         id: randomUUID(),
         userId,
         tokenHash: hashToken(token),
-        csrfTokenHash: Uint8Array.from(randomBytes(32)),
-        ip: meta.ip,
-        userAgent: meta.userAgent?.slice(0, 500),
+        csrfTokenHash: randomBytes(32),
+        ip: meta.ip ?? null,
+        userAgent: meta.userAgent?.slice(0, 500) ?? null,
         expiresAt,
-      },
-    });
+      }),
+    );
 
     return { token, expiresAt };
   }
 
   private async ensureWorkspace(userId: string, displayName: string): Promise<WorkspaceView> {
-    const membership = await this.prisma.workspaceMember.findFirst({
+    const membership = await this.members.findOne({
       where: { userId },
-      include: { workspace: true },
-      orderBy: { createdAt: 'asc' },
+      relations: { workspace: true },
+      order: { createdAt: 'ASC' },
     });
 
     if (membership) {
       return toWorkspaceView(membership.workspace);
     }
 
-    const workspace = await this.prisma.$transaction(async (tx) => {
-      const created = await tx.workspace.create({
-        data: {
+    const workspace = await this.workspaces.manager.transaction(async (manager) => {
+      const created = await manager.getRepository(Workspace).save(
+        manager.getRepository(Workspace).create({
           id: randomUUID(),
           name: `Workspace ${displayName}`,
           ownerId: userId,
-        },
-      });
+        }),
+      );
 
-      await tx.workspaceMember.create({
-        data: {
+      await manager.getRepository(WorkspaceMember).save(
+        manager.getRepository(WorkspaceMember).create({
           workspaceId: created.id,
           userId,
           role: WorkspaceRole.OWNER,
-        },
-      });
+        }),
+      );
 
       return created;
     });

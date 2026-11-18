@@ -11,6 +11,22 @@
   padding: 13px 16px;
 }
 
+.toolbar-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-filter {
+  display: flex;
+}
+
+.status-filter select {
+  height: 34px;
+  min-width: 130px;
+  font-size: 11.5px;
+}
+
 .toolbar-title {
   color: var(--text);
   font-size: 11.5px;
@@ -106,6 +122,8 @@
   display: flex;
   align-items: center;
   gap: 9px;
+  color: inherit;
+  text-decoration: none;
 }
 
 .doc-cell strong {
@@ -133,8 +151,20 @@
 }
 
 .row-action {
-  width: 44px;
+  width: 108px;
   text-align: right;
+  white-space: nowrap;
+}
+
+.row-link {
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.row-link-danger:hover {
+  background: var(--danger-soft, #fef2f2);
+  color: var(--danger, #dc2626);
 }
 
 .row-link {
@@ -179,5 +209,14 @@
 
   .documents-hint {
     display: none;
+  }
+
+  .toolbar-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .row-action {
+    width: 84px;
   }
 }

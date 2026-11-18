@@ -1,12 +1,16 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { formatDate, formatMoney } from '../../core/format';
+import { apiErrorMessage } from '../../core/http-error';
 import {
-  DocumentStatus,
-  MOCK_DOCUMENTS,
+  InvoiceListRow,
+  InvoiceService,
+  InvoiceStatusFilter,
   STATUS_LABEL,
-  formatDate,
-  formatIdr,
-} from '../../core/mock-documents';
+  displayStatus,
+  pdfFilename,
+  statusClass,
+} from '../../core/invoice.service';
 
 @Component({
   selector: 'app-documents',
@@ -15,40 +19,82 @@ import {
   styleUrl: './documents.scss',
 })
 export class DocumentsPage {
+  private readonly invoicesApi = inject(InvoiceService);
+
+  protected readonly rows = this.invoicesApi.invoices;
+  protected readonly loading = this.invoicesApi.listLoading;
+  protected readonly loadError = this.invoicesApi.listError;
+
   protected readonly search = signal('');
-  protected readonly statusLabel = STATUS_LABEL;
+  protected readonly status = signal<InvoiceStatusFilter>('ALL');
+  protected readonly actionError = signal('');
+
   protected readonly formatDate = formatDate;
-  protected readonly formatIdr = formatIdr;
+  protected readonly formatMoney = formatMoney;
+  protected readonly statusLabel = STATUS_LABEL;
+  protected readonly statusClass = statusClass;
+  protected readonly displayStatus = displayStatus;
 
-  protected readonly filtered = computed(() => {
-    const query = this.search().trim().toLowerCase();
+  protected readonly filters: Array<{ value: InvoiceStatusFilter; label: string }> = [
+    { value: 'ALL', label: 'All invoices' },
+    { value: 'DRAFT', label: 'Draft' },
+    { value: 'ISSUED', label: 'Issued' },
+    { value: 'PAID', label: 'Paid' },
+    { value: 'OVERDUE', label: 'Overdue' },
+    { value: 'VOID', label: 'Void' },
+  ];
 
-    return MOCK_DOCUMENTS.filter(
-      (doc) =>
-        !query ||
-        doc.number.toLowerCase().includes(query) ||
-        doc.customer.toLowerCase().includes(query),
-    );
-  });
+  private searchTimer?: ReturnType<typeof setTimeout>;
+
+  constructor() {
+    void this.reload();
+  }
 
   protected updateSearch(event: Event): void {
     this.search.set((event.target as HTMLInputElement).value);
+    clearTimeout(this.searchTimer);
+    this.searchTimer = setTimeout(() => void this.reload(), 250);
   }
 
   protected clearSearch(): void {
     this.search.set('');
+    void this.reload();
   }
 
-  protected statusClass(status: DocumentStatus): string {
-    switch (status) {
-      case 'PAID':
-        return 'ui-badge ui-badge-green';
-      case 'SENT':
-        return 'ui-badge ui-badge-blue';
-      case 'OVERDUE':
-        return 'ui-badge ui-badge-red';
-      default:
-        return 'ui-badge ui-badge-neutral';
+  protected updateStatus(event: Event): void {
+    this.status.set((event.target as HTMLSelectElement).value as InvoiceStatusFilter);
+    void this.reload();
+  }
+
+  protected canDelete(row: InvoiceListRow): boolean {
+    return row.status === 'DRAFT' || row.status === 'VOID';
+  }
+
+  protected async download(row: InvoiceListRow): Promise<void> {
+    this.actionError.set('');
+
+    try {
+      await this.invoicesApi.downloadPdf(row.id, pdfFilename(row));
+    } catch (error) {
+      this.actionError.set(apiErrorMessage(error));
     }
+  }
+
+  protected async remove(row: InvoiceListRow): Promise<void> {
+    this.actionError.set('');
+
+    if (!confirm(`Delete invoice ${row.number ?? ''}? This cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await this.invoicesApi.remove(row.id);
+    } catch (error) {
+      this.actionError.set(apiErrorMessage(error));
+    }
+  }
+
+  private async reload(): Promise<void> {
+    await this.invoicesApi.loadInvoices({ search: this.search(), status: this.status() });
   }
 }

@@ -1,14 +1,14 @@
 import { Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
-import { CompanyProfileCard } from './company-profile-card/company-profile-card';
+import { formatDate, formatIdr } from '../../core/format';
 import {
-  DocumentStatus,
-  MOCK_DOCUMENTS,
+  InvoiceService,
   STATUS_LABEL,
-  formatDate,
-  formatIdr,
-} from '../../core/mock-documents';
+  displayStatus,
+  statusClass,
+} from '../../core/invoice.service';
+import { CompanyProfileCard } from './company-profile-card/company-profile-card';
 
 interface Stat {
   label: string;
@@ -26,13 +26,29 @@ interface Stat {
 })
 export class DashboardPage {
   private readonly auth = inject(AuthService);
+  private readonly invoicesApi = inject(InvoiceService);
 
   protected readonly user = this.auth.user;
   protected readonly workspace = this.auth.workspace;
-  protected readonly recent = MOCK_DOCUMENTS.slice(0, 5);
   protected readonly statusLabel = STATUS_LABEL;
   protected readonly formatDate = formatDate;
   protected readonly formatIdr = formatIdr;
+  protected readonly statusClass = statusClass;
+  protected readonly displayStatus = displayStatus;
+
+  protected readonly recent = computed(() =>
+    this.invoicesApi
+      .invoices()
+      .slice(0, 5)
+      .map((row) => ({
+        id: row.id,
+        number: row.number ?? 'Draft',
+        customer: row.customerName,
+        issueDate: row.issueDate,
+        total: row.total,
+        status: displayStatus(row),
+      })),
+  );
 
   protected readonly greeting = computed(() => {
     const hour = new Date().getHours();
@@ -45,47 +61,43 @@ export class DashboardPage {
     () => this.user()?.displayName.split(/\s+/)[0] ?? 'there',
   );
 
-  protected readonly stats: Stat[] = [
-    {
-      label: 'Total invoices',
-      value: '24',
-      detail: '+3 this month',
-      tone: 'blue',
-      icon: 'documents',
-    },
-    {
-      label: 'Unpaid',
-      value: 'IDR 12.45m',
-      detail: '3 invoices need attention',
-      tone: 'amber',
-      icon: 'clock',
-    },
-    {
-      label: 'Paid',
-      value: '11',
-      detail: 'IDR 8.2m received',
-      tone: 'green',
-      icon: 'check',
-    },
-    {
-      label: 'Drafts',
-      value: '3',
-      detail: 'Need completion',
-      tone: 'violet',
-      icon: 'edit',
-    },
-  ];
+  protected readonly stats = computed<Stat[]>(() => {
+    const summary = this.invoicesApi.summary();
 
-  protected statusClass(status: DocumentStatus): string {
-    switch (status) {
-      case 'PAID':
-        return 'ui-badge ui-badge-green';
-      case 'SENT':
-        return 'ui-badge ui-badge-blue';
-      case 'OVERDUE':
-        return 'ui-badge ui-badge-red';
-      default:
-        return 'ui-badge ui-badge-neutral';
-    }
+    return [
+      {
+        label: 'Total invoices',
+        value: String(summary?.totalInvoices ?? 0),
+        detail: `+${summary?.totalThisMonth ?? 0} this month`,
+        tone: 'blue',
+        icon: 'documents',
+      },
+      {
+        label: 'Unpaid',
+        value: formatIdr(summary?.outstandingTotal ?? 0),
+        detail: `${summary?.outstandingCount ?? 0} awaiting payment`,
+        tone: 'amber',
+        icon: 'clock',
+      },
+      {
+        label: 'Paid',
+        value: String(summary?.paidCount ?? 0),
+        detail: `${formatIdr(summary?.paidTotal ?? 0)} received`,
+        tone: 'green',
+        icon: 'check',
+      },
+      {
+        label: 'Drafts',
+        value: String(summary?.draftCount ?? 0),
+        detail: 'Need completion',
+        tone: 'violet',
+        icon: 'edit',
+      },
+    ];
+  });
+
+  constructor() {
+    void this.invoicesApi.loadInvoices();
+    void this.invoicesApi.loadSummary();
   }
 }

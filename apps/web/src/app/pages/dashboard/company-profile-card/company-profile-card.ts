@@ -1,10 +1,10 @@
 import { Component, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { AuthService } from '../../../core/auth.service';
-import { CompanyProfileService, DEFAULT_COMPANY_LOGO } from '../../../core/company-profile.service';
+import { apiErrorMessage } from '../../../core/http-error';
+import { CompanyService, DEFAULT_COMPANY_LOGO } from '../../../core/company.service';
 
-const MAX_LOGO_BYTES = 1_500_000;
+const MAX_LOGO_BYTES = 1_000_000;
 const ALLOWED_LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 
 @Component({
@@ -15,34 +15,43 @@ const ALLOWED_LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 })
 export class CompanyProfileCard {
   private readonly fb = inject(FormBuilder);
-  private readonly auth = inject(AuthService);
-  private readonly profiles = inject(CompanyProfileService);
+  private readonly companies = inject(CompanyService);
 
   protected readonly defaultLogo = DEFAULT_COMPANY_LOGO;
   protected readonly saved = signal(false);
+  protected readonly saving = signal(false);
   protected readonly saveError = signal('');
   protected readonly logoError = signal('');
   protected readonly logoPreview = signal<string | null>(null);
 
   protected readonly form = this.fb.nonNullable.group({
-    companyName: ['', [Validators.required, Validators.maxLength(120)]],
-    address: ['', [Validators.required, Validators.maxLength(300)]],
-    phone: ['', [Validators.required, Validators.maxLength(30)]],
+    companyName: ['', [Validators.required, Validators.maxLength(160)]],
+    address: ['', [Validators.required, Validators.maxLength(400)]],
+    phone: ['', [Validators.required, Validators.maxLength(40)]],
   });
 
   constructor() {
-    const profile = this.profiles.load(this.auth.workspace()?.id ?? null);
-    this.form.patchValue({
-      companyName: profile.companyName,
-      address: profile.address,
-      phone: profile.phone,
-    });
-    this.logoPreview.set(profile.logoUrl);
-
     this.form.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => {
       this.saved.set(false);
       this.saveError.set('');
     });
+
+    void this.hydrate();
+  }
+
+  private async hydrate(): Promise<void> {
+    const company = await this.companies.ensureLoaded();
+
+    if (!company) {
+      return;
+    }
+
+    this.form.patchValue({
+      companyName: company.legalName,
+      address: company.address ?? '',
+      phone: company.phone ?? '',
+    });
+    this.logoPreview.set(company.logoDataUrl);
   }
 
   protected onLogoSelected(event: Event): void {
@@ -60,7 +69,7 @@ export class CompanyProfileCard {
     }
 
     if (file.size > MAX_LOGO_BYTES) {
-      this.logoError.set('The logo must be 1.5 MB or smaller.');
+      this.logoError.set('The logo must be 1 MB or smaller.');
       return;
     }
 
@@ -79,7 +88,7 @@ export class CompanyProfileCard {
     this.saved.set(false);
   }
 
-  protected submit(): void {
+  protected async submit(): Promise<void> {
     this.saveError.set('');
 
     if (this.form.invalid) {
@@ -88,16 +97,21 @@ export class CompanyProfileCard {
       return;
     }
 
-    const saved = this.profiles.save(this.auth.workspace()?.id ?? null, {
-      ...this.form.getRawValue(),
-      logoUrl: this.logoPreview(),
-    });
+    this.saving.set(true);
 
-    if (!saved) {
-      this.saveError.set('The profile could not be saved in this browser.');
-      return;
+    try {
+      const value = this.form.getRawValue();
+      await this.companies.save({
+        legalName: value.companyName,
+        address: value.address,
+        phone: value.phone,
+        logoDataUrl: this.logoPreview() ?? undefined,
+      });
+      this.saved.set(true);
+    } catch (error) {
+      this.saveError.set(apiErrorMessage(error));
+    } finally {
+      this.saving.set(false);
     }
-
-    this.saved.set(true);
   }
 }

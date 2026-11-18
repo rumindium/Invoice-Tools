@@ -31,7 +31,7 @@ Requirements: Node.js 22 LTS and npm 10+. Local development uses npm only.
 ```bash
 npm install
 cp .env.example .env
-npm run db:generate
+npm run db:migrate
 npm run dev
 ```
 
@@ -42,20 +42,33 @@ npm run dev
 | Readiness | `http://localhost:4310/api/v1/health/ready` | Checks PostgreSQL; `503` until a database is reachable |
 | PostgreSQL | `localhost:5432` | Expected by `.env.example`; install PostgreSQL 16 locally or point `DATABASE_URL` elsewhere |
 
-The API starts even when PostgreSQL is not running: liveness stays green and readiness reports the database as down.
-The workspace status panel shows the same result.
+The API opens its TypeORM connection at startup and retries a few times; if PostgreSQL stays unreachable the process
+exits instead of serving requests. Readiness reports the database dependency on every call.
 
 ### Database
 
-The schema lives in [`prisma/schema.prisma`](prisma/schema.prisma). Apply the committed migration once PostgreSQL is
-reachable:
+The schema is defined by the TypeORM entities in
+[`apps/api/src/database/entities`](apps/api/src/database/entities), and `synchronize` stays off so migrations are the
+only way the schema changes. Apply the committed migrations once PostgreSQL is reachable:
 
 ```bash
-npm run db:validate
 npm run db:migrate
 ```
 
-For schema changes during development, use `npm run db:migrate:dev -- --name <change>`.
+The first migration is a baseline that matches the current schema. A database that already contains the tables is
+recorded as migrated instead of being recreated:
+
+```bash
+npm run db:migrate --workspace @rumindium/api -- --fake
+```
+
+For schema changes during development, update the entity, then generate and apply a migration:
+
+```bash
+npm run build --workspace @rumindium/api
+npm run db:migrate:generate --workspace @rumindium/api -- src/database/migrations/AddSomething
+npm run db:migrate
+```
 
 ## Root scripts
 
@@ -64,23 +77,22 @@ For schema changes during development, use `npm run db:migrate:dev -- --name <ch
 | `npm run dev` | Runs the API and Angular app together with hot reload |
 | `npm run dev:api` | API only, on `4310` |
 | `npm run dev:web` | Angular only, on `4210` |
-| `npm run build` | Generates the Prisma client, then builds API and web |
+| `npm run build` | Builds the API and the web app |
 | `npm run typecheck` | Typechecks both workspaces |
 | `npm run lint` | ESLint plus Prettier check |
 | `npm run test` | API unit tests (Vitest) |
-| `npm run db:generate` | Generates the Prisma client |
-| `npm run db:validate` | Validates the Prisma schema |
-| `npm run db:migrate` | Applies committed migrations |
+| `npm run db:migrate` | Builds the API, then applies committed migrations |
+| `npm run db:migrate:show` | Lists applied and pending migrations |
+| `npm run db:migrate:revert` | Reverts the last migration |
+| `npm run db:migrate:generate` | Generates a migration from entity changes |
 
 ## Repository layout
 
 ```text
 apps/
-  api/                 NestJS API, Prisma service, health endpoints, Vitest tests
+  api/                 NestJS API, TypeORM entities and migrations, health endpoints, Vitest tests
+    src/database/      Data source, entities, migrations and the baseline schema SQL
   web/                 Angular SSR app, public page and workspace shell
-prisma/
-  schema.prisma        Schema v1
-  migrations/          Initial PostgreSQL migration
 docs/                  Specification and engineering documentation
 ```
 

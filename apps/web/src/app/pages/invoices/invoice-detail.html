@@ -1,0 +1,288 @@
+<section class="ui-page">
+  <header class="ui-page-head generator-head">
+    <div>
+      <a class="back-link" routerLink="/documents">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M20 12H4M10 6l-6 6 6 6" />
+        </svg>
+        My invoices
+      </a>
+      <p class="ui-eyebrow">Invoice</p>
+      <h1>{{ invoice()?.number ?? 'Invoice' }}</h1>
+      <p class="ui-sub">
+        Follow this invoice from draft to paid, change its status, and download the PDF.
+      </p>
+    </div>
+
+    <div class="detail-actions">
+      <button class="ui-btn ui-btn-ghost" type="button" [disabled]="busy()" (click)="download()">
+        Download PDF
+      </button>
+      @if (canEdit()) {
+      <a
+        class="ui-btn ui-btn-ghost"
+        [routerLink]="['/invoices/new']"
+        [queryParams]="{ id: invoice()?.id }"
+      >
+        Edit
+      </a>
+      } @if (canDelete()) {
+      <button class="ui-btn ui-btn-ghost" type="button" [disabled]="busy()" (click)="remove()">
+        Delete
+      </button>
+      }
+    </div>
+  </header>
+
+  @if (loadError()) {
+  <div class="ui-alert" role="alert">
+    <span>{{ loadError() }}</span>
+    <a class="ui-link" routerLink="/documents">Back to my invoices</a>
+  </div>
+  } @if (actionError()) {
+  <div class="ui-alert" role="alert">
+    <span>{{ actionError() }}</span>
+    <button class="ui-link" type="button" (click)="actionError.set('')">Close</button>
+  </div>
+  } @if (loading()) {
+  <div class="ui-card ui-empty"><strong>Loading invoice…</strong></div>
+  } @else if (invoice(); as inv) {
+  <div class="detail-grid">
+    <article class="ui-card paper" aria-label="Invoice document">
+      <header class="paper-head">
+        <div class="paper-issuer">
+          @if (inv.company.logoDataUrl) {
+          <img class="paper-logo" [src]="inv.company.logoDataUrl" alt="" />
+          } @else {
+          <span class="paper-logo paper-logo-fallback" aria-hidden="true">
+            {{ inv.company.name.slice(0, 1) }}
+          </span>
+          }
+          <div>
+            <strong>{{ inv.company.name }}</strong>
+            @if (inv.company.address) {
+            <span>{{ inv.company.address }}</span>
+            } @if (inv.company.phone || inv.company.email) {
+            <span
+              >{{ inv.company.phone }}{{ inv.company.phone && inv.company.email ? ' · ' : '' }}{{
+              inv.company.email }}</span
+            >
+            } @if (inv.company.taxId) {
+            <span>Tax ID {{ inv.company.taxId }}</span>
+            }
+          </div>
+        </div>
+
+        <div class="paper-title">
+          <strong>INVOICE</strong>
+          <span>{{ inv.number ?? 'Draft' }}</span>
+          <span [class]="statusClass(displayStatus())">{{ statusLabel[displayStatus()] }}</span>
+        </div>
+      </header>
+
+      <div class="paper-meta">
+        <div>
+          <span class="paper-label">Billed to</span>
+          <strong>{{ inv.customer.name }}</strong>
+          @if (inv.customer.address) {
+          <span>{{ inv.customer.address }}</span>
+          } @if (inv.customer.email) {
+          <span>{{ inv.customer.email }}</span>
+          } @if (inv.customer.phone) {
+          <span>{{ inv.customer.phone }}</span>
+          }
+        </div>
+        <dl class="paper-dates">
+          <div>
+            <dt>Invoice date</dt>
+            <dd>{{ formatDate(inv.issueDate) }}</dd>
+          </div>
+          <div>
+            <dt>Due date</dt>
+            <dd>{{ formatDate(inv.dueDate) }}</dd>
+          </div>
+          @if (inv.referenceNumber) {
+          <div>
+            <dt>Reference</dt>
+            <dd>{{ inv.referenceNumber }}</dd>
+          </div>
+          }
+        </dl>
+      </div>
+
+      <div class="ui-table-wrap">
+        <table class="ui-table paper-table">
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th class="num">Qty</th>
+              <th class="num">Unit price</th>
+              <th class="num">Tax</th>
+              <th class="num">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of inv.items; track item.id) {
+            <tr>
+              <td>
+                <strong>{{ item.name }}</strong>
+                @if (item.description) {
+                <span class="ui-muted">{{ item.description }}</span>
+                }
+              </td>
+              <td class="num">{{ item.quantity }}</td>
+              <td class="num">{{ formatMoney(item.unitPrice, inv.currency) }}</td>
+              <td class="num">{{ item.taxRate }}%</td>
+              <td class="num">{{ formatMoney(item.lineTotal, inv.currency) }}</td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="paper-totals">
+        <div class="totals-row">
+          <span>Subtotal</span><strong>{{ formatMoney(inv.totals.subtotal, inv.currency) }}</strong>
+        </div>
+        @if (inv.totals.discountTotal > 0) {
+        <div class="totals-row">
+          <span>Discount</span>
+          <strong>-{{ formatMoney(inv.totals.discountTotal, inv.currency) }}</strong>
+        </div>
+        } @if (inv.totals.taxTotal > 0) {
+        <div class="totals-row">
+          <span>Tax</span><strong>{{ formatMoney(inv.totals.taxTotal, inv.currency) }}</strong>
+        </div>
+        } @if (inv.totals.shippingAmount > 0) {
+        <div class="totals-row">
+          <span>Shipping</span>
+          <strong>{{ formatMoney(inv.totals.shippingAmount, inv.currency) }}</strong>
+        </div>
+        } @if (inv.totals.additionalCharges > 0) {
+        <div class="totals-row">
+          <span>Additional charges</span>
+          <strong>{{ formatMoney(inv.totals.additionalCharges, inv.currency) }}</strong>
+        </div>
+        }
+        <div class="totals-row totals-grand">
+          <span>Total</span><strong>{{ formatMoney(inv.totals.grandTotal, inv.currency) }}</strong>
+        </div>
+        @if (inv.totals.amountPaid > 0) {
+        <div class="totals-row">
+          <span>Paid</span><strong>{{ formatMoney(inv.totals.amountPaid, inv.currency) }}</strong>
+        </div>
+        <div class="totals-row totals-due">
+          <span>Balance due</span>
+          <strong>{{ formatMoney(inv.totals.balanceDue, inv.currency) }}</strong>
+        </div>
+        }
+      </div>
+
+      @if (inv.notes) {
+      <div class="paper-notes">
+        <span class="paper-label">Notes</span>
+        <p>{{ inv.notes }}</p>
+      </div>
+      } @if (inv.voidedAt) {
+      <div class="paper-notes paper-void">
+        <span class="paper-label">Voided</span>
+        <p>{{ inv.voidReason }}</p>
+      </div>
+      }
+    </article>
+
+    <aside class="status-column">
+      <section class="ui-card track-card" aria-labelledby="status-heading">
+        <header class="track-head">
+          <h2 id="status-heading">Status</h2>
+          <span [class]="statusClass(displayStatus())">{{ statusLabel[displayStatus()] }}</span>
+        </header>
+
+        <ol class="tracker">
+          @for (step of tracker(); track step.key) {
+          <li [class]="'tracker-step is-' + step.state">
+            <span class="tracker-dot" aria-hidden="true"></span>
+            <span class="tracker-label">{{ step.label }}</span>
+          </li>
+          }
+        </ol>
+
+        @if (displayStatus() === 'VOID') {
+        <p class="track-hint">This invoice was voided and cannot change status again.</p>
+        } @else if (nextStatuses().length === 0) {
+        <p class="track-hint">This invoice is settled; no further status change is possible.</p>
+        } @else {
+        <div class="status-form">
+          <label class="ui-field">
+            <span>Change status to</span>
+            <select class="ui-select" [value]="selectedStatus()" (change)="updateSelection($event)">
+              <option value="">Select a status…</option>
+              @for (status of nextStatuses(); track status) {
+              <option [value]="status">{{ statusActionLabel[status] ?? status }}</option>
+              }
+            </select>
+          </label>
+
+          @if (selectedStatus() === 'VOID') {
+          <label class="ui-field">
+            <span>Reason for voiding</span>
+            <textarea
+              class="ui-textarea"
+              rows="2"
+              placeholder="Cancelled by the customer"
+              [value]="voidReason()"
+              (input)="updateReason($event)"
+            ></textarea>
+          </label>
+          }
+
+          <button
+            class="ui-btn ui-btn-primary status-apply"
+            type="button"
+            [disabled]="busy() || !selectedStatus()"
+            (click)="applyStatus()"
+          >
+            {{ busy() ? 'Saving…' : 'Apply status' }}
+          </button>
+        </div>
+        }
+      </section>
+
+      <section class="ui-card history-card" aria-labelledby="history-heading">
+        <header class="track-head">
+          <h2 id="history-heading">History</h2>
+          <span class="history-count">{{ inv.history.length }}</span>
+        </header>
+
+        @if (history().length === 0) {
+        <p class="track-hint">No activity recorded for this invoice yet.</p>
+        } @else {
+        <ol class="history">
+          @for (entry of history(); track entry.id) {
+          <li>
+            <span class="history-dot" aria-hidden="true"></span>
+            <div class="history-body">
+              <strong>{{ historyTitle(entry) }}</strong>
+              <span class="history-meta">
+                {{ formatDateTime(entry.at) }}{{ entry.actorName ? ' · ' + entry.actorName : '' }}
+              </span>
+              @if (entry.reason) {
+              <span class="history-reason">{{ entry.reason }}</span>
+              }
+            </div>
+          </li>
+          }
+        </ol>
+        }
+      </section>
+    </aside>
+  </div>
+  }
+</section>
