@@ -1,0 +1,223 @@
+<section class="ui-page">
+  <header class="ui-page-head generator-head">
+    <div>
+      <a class="back-link" routerLink="/feedback">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M20 12H4M10 6l-6 6 6 6" />
+        </svg>
+        Feedback
+      </a>
+      <p class="ui-eyebrow">Customer feedback</p>
+      <h1>{{ feedback()?.subject ?? 'Feedback' }}</h1>
+      @if (feedback(); as f) {
+      <p class="ui-sub">
+        {{ f.customer.name }} · {{ sourceText(f) }} · {{ formatDate(f.receivedOn) }}
+      </p>
+      }
+    </div>
+    <div class="detail-actions">
+      @if (feedback(); as f) {
+      <a class="ui-btn ui-btn-ghost" [routerLink]="['/feedback', f.id, 'edit']">Edit</a>
+      <button class="ui-btn ui-btn-ghost" type="button" [disabled]="busy()" (click)="remove()">
+        Delete
+      </button>
+      }
+    </div>
+  </header>
+
+  @if (loadError()) {
+  <div class="ui-alert" role="alert">
+    <span>{{ loadError() }}</span>
+    <a class="ui-link" routerLink="/feedback">Back to feedback</a>
+  </div>
+  } @if (actionError()) {
+  <div class="ui-alert" role="alert">
+    <span>{{ actionError() }}</span>
+    <button class="ui-link" type="button" (click)="actionError.set('')">Close</button>
+  </div>
+  } @if (loading()) {
+  <div class="ui-card ui-empty"><strong>Loading feedback…</strong></div>
+  } @else if (feedback(); as f) {
+  <div class="detail-grid">
+    <div class="feedback-main">
+      <article class="ui-card feedback-card" data-testid="feedback-card">
+        <div class="feedback-tags">
+          <span [class]="categoryClass(f.category)" data-testid="feedback-category"
+            >{{ categoryLabel[f.category] }}</span
+          >
+          @if (f.rating) {
+          <app-star-rating [readonly]="true" [rating]="f.rating" />
+          <span class="ui-muted" data-testid="feedback-rating">{{ f.rating }} / 5</span>
+          } @else {
+          <span class="ui-muted" data-testid="feedback-rating">Not rated</span>
+          }
+        </div>
+
+        <blockquote class="feedback-quote" data-testid="feedback-message">
+          {{ f.message }}
+        </blockquote>
+
+        <dl class="feedback-facts">
+          <div>
+            <dt>Customer</dt>
+            <dd data-testid="feedback-customer">
+              @if (f.customer.id) {
+              <a class="ui-link" [routerLink]="['/customers', f.customer.id]"
+                >{{ f.customer.name }}</a
+              >
+              } @else { {{ f.customer.name }} <span class="ui-muted">(not in customer list)</span>
+              }
+            </dd>
+          </div>
+          <div>
+            <dt>Contact person</dt>
+            <dd>{{ f.contactName || '—' }}</dd>
+          </div>
+          <div>
+            <dt>Source</dt>
+            <dd class="source-tag" data-testid="feedback-source">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path [attr.d]="sourceIcon[f.source]" />
+              </svg>
+              {{ sourceText(f) }}
+            </dd>
+          </div>
+          <div>
+            <dt>Received on</dt>
+            <dd>{{ formatDate(f.receivedOn) }}</dd>
+          </div>
+          <div>
+            <dt>Related document</dt>
+            <dd data-testid="feedback-related">
+              @if (f.relatedDocument; as doc) {
+              <a class="ui-link" [routerLink]="relatedLink(doc)"
+                >{{ relatedTypeLabel[doc.type] }} {{ doc.number }}</a
+              >
+              } @else { — }
+            </dd>
+          </div>
+          <div>
+            <dt>Evidence</dt>
+            <dd>
+              @if (f.evidence; as evidence) { @if (isLink(evidence)) {
+              <a class="ui-link" [href]="evidence" target="_blank" rel="noopener noreferrer"
+                >{{ evidence }}</a
+              >
+              } @else { {{ evidence }} } } @else { — }
+            </dd>
+          </div>
+          <div>
+            <dt>Logged by</dt>
+            <dd>{{ f.createdByName || '—' }} · {{ formatDateTime(f.createdAt) }}</dd>
+          </div>
+        </dl>
+      </article>
+
+      @if (f.resolution) {
+      <section class="ui-card resolution-card" data-testid="feedback-resolution">
+        <span class="paper-label">Resolution</span>
+        <p>{{ f.resolution }}</p>
+        @if (f.resolvedAt) {
+        <span class="ui-muted">Resolved {{ formatDateTime(f.resolvedAt) }}</span>
+        }
+      </section>
+      }
+    </div>
+
+    <aside class="status-column">
+      <section class="ui-card track-card" aria-labelledby="status-heading">
+        <header class="track-head">
+          <h2 id="status-heading">Status</h2>
+          <span [class]="statusClass(f.status)" data-testid="feedback-status"
+            >{{ statusLabel[f.status] }}</span
+          >
+        </header>
+
+        <ol class="tracker">
+          @for (step of tracker(); track step.key) {
+          <li [class]="'tracker-step is-' + step.state">
+            <span class="tracker-dot" aria-hidden="true"></span>
+            <span class="tracker-label">{{ step.label }}</span>
+          </li>
+          }
+        </ol>
+
+        <div class="status-form">
+          <label class="ui-field">
+            <span>Change status to</span>
+            <select class="ui-select" [value]="selectedStatus()" (change)="updateSelection($event)">
+              <option value="">Select a status…</option>
+              @for (status of f.nextStatuses; track status) {
+              <option [value]="status">
+                {{ f.status === 'RESOLVED' && status === 'IN_PROGRESS' ? 'Reopen' :
+                actionLabel[status] }}
+              </option>
+              }
+            </select>
+          </label>
+
+          @if (selectedStatus() === 'RESOLVED') {
+          <label class="ui-field">
+            <span>How was it resolved?</span>
+            <textarea
+              class="ui-textarea"
+              rows="3"
+              placeholder="Called the customer and agreed on a replacement"
+              [value]="resolution()"
+              (input)="updateResolution($event)"
+            ></textarea>
+          </label>
+          }
+
+          <button
+            class="ui-btn ui-btn-primary status-apply"
+            type="button"
+            [disabled]="busy() || !selectedStatus()"
+            (click)="applyStatus()"
+          >
+            {{ busy() ? 'Saving…' : 'Apply status' }}
+          </button>
+        </div>
+      </section>
+
+      <section class="ui-card history-card" aria-labelledby="history-heading">
+        <header class="track-head">
+          <h2 id="history-heading">History</h2>
+          <span class="history-count">{{ f.history.length }}</span>
+        </header>
+        <ol class="history">
+          @for (entry of history(); track entry.id) {
+          <li>
+            <span class="history-dot" aria-hidden="true"></span>
+            <div class="history-body">
+              <strong>{{ historyTitle(entry) }}</strong>
+              <span class="history-meta">
+                {{ formatDateTime(entry.at) }}{{ entry.actorName ? ' · ' + entry.actorName : '' }}
+              </span>
+              @if (entry.reason) {
+              <span class="history-reason">{{ entry.reason }}</span>
+              }
+            </div>
+          </li>
+          }
+        </ol>
+      </section>
+    </aside>
+  </div>
+  }
+</section>

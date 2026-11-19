@@ -1,0 +1,147 @@
+<section
+  class="ui-card termin-card"
+  [attr.aria-labelledby]="testId() + '-heading'"
+  [attr.data-testid]="testId()"
+>
+  <header class="termin-head">
+    <div>
+      <h2 [id]="testId() + '-heading'">Payment termins</h2>
+      <p>
+        {{ plan().termins.length }} {{ nounPlural() }} · {{ formatPercentage(plan().totalPercentage)
+        }} of {{ formatMoney(plan().baseTotal, plan().currency) }}
+      </p>
+    </div>
+    <span class="termin-count" data-testid="termin-plan-progress"
+      >{{ plan().liveCount }}/{{ plan().termins.length }}</span
+    >
+  </header>
+
+  <div class="termin-bar" aria-hidden="true">
+    @for (termin of plan().termins; track termin.sequence) { @if (termin.percentage > 0) {
+    <span
+      class="termin-bar-part"
+      [class.is-open]="!termin.document"
+      [style.width.%]="termin.percentage"
+      [style.background]="color(termin)"
+    ></span>
+    } }
+  </div>
+
+  @if (plan().source && !hideSource()) { @let source = plan().source!;
+  <p class="termin-source">
+    {{ baseLabel() }} from
+    <a [routerLink]="sourceLink()" data-testid="termin-plan-source">{{ source.number }}</a>
+  </p>
+  } @if (plan().blockedReason; as reason) {
+  <p class="termin-note is-warning">{{ reason }} No further termin can be created.</p>
+  }
+
+  <ol class="termin-list">
+    @for (termin of plan().termins; track termin.sequence) {
+    <li
+      class="termin-item"
+      [class.is-current]="termin.document && termin.document.id === currentId()"
+      data-testid="termin-plan-row"
+    >
+      <span class="termin-mark" [style.background]="color(termin)" aria-hidden="true"
+        >{{ termin.sequence }}</span
+      >
+      <div class="termin-body">
+        <div class="termin-line">
+          <strong>Termin {{ termin.sequence }} · {{ formatPercentage(termin.percentage) }}</strong>
+          <span class="termin-amount">{{ formatMoney(termin.amount, plan().currency) }}</span>
+        </div>
+        @if (termin.document; as doc) {
+        <div class="termin-line">
+          @if (doc.id === currentId()) {
+          <span class="termin-doc is-self" title="This document" data-testid="termin-plan-self"
+            >{{ doc.number }} <small>(this)</small></span
+          >
+          } @else {
+          <a class="termin-doc" [routerLink]="link(doc.id)" data-testid="termin-plan-document"
+            >{{ doc.number }}</a
+          >
+          }
+          <span [class]="badgeClass(doc.status)">{{ statusLabel(doc.status) }}</span>
+        </div>
+        } @else {
+        <div class="termin-line">
+          <span class="termin-pending">
+            @if (termin.previous; as prev) { {{ prev.number }} was {{
+            statusLabel(prev.status).toLowerCase() }} } @else if (termin.percentage === 0) { 0% —
+            set a percentage first } @else { Not created yet }
+          </span>
+          @if (termin.canGenerate) {
+          <button
+            class="ui-btn ui-btn-ghost ui-btn-sm"
+            type="button"
+            [disabled]="busy() !== null"
+            [attr.aria-label]="'Create termin ' + termin.sequence"
+            (click)="generate(termin)"
+          >
+            {{ busy() === 'termin-' + termin.sequence ? 'Creating…' : termin.previous ? 'Create
+            again' : 'Create' }}
+          </button>
+          }
+        </div>
+        }
+      </div>
+    </li>
+    }
+  </ol>
+
+  @if (notice()) {
+  <p class="termin-note is-success" role="status" data-testid="termin-plan-notice">
+    {{ notice() }}
+  </p>
+  } @if (error()) {
+  <p class="termin-note is-error" role="alert">{{ error() }}</p>
+  }
+
+  <div class="termin-actions">
+    @if (remaining().length > 1) {
+    <button
+      class="ui-btn ui-btn-primary"
+      type="button"
+      [disabled]="busy() !== null"
+      (click)="generateRemaining()"
+    >
+      {{ busy() === 'remaining' ? 'Creating…' : 'Create remaining ' + remaining().length + ' ' +
+      nounPlural() }}
+    </button>
+    }
+    <div class="termin-links">
+      <button class="ui-link" type="button" [disabled]="busy() !== null" (click)="openEdit()">
+        Change split
+      </button>
+      @if (plan().canDelete) {
+      <button
+        class="ui-link is-danger"
+        type="button"
+        [disabled]="busy() !== null"
+        (click)="remove()"
+      >
+        Delete plan
+      </button>
+      }
+    </div>
+  </div>
+</section>
+
+<app-termin-dialog
+  [open]="editing()"
+  heading="Change the termin split"
+  intro="Termins that already have a live document keep their percentage. The total cannot exceed 100%."
+  [total]="plan().baseTotal"
+  [currency]="plan().currency"
+  [noun]="noun()"
+  [nounPlural]="nounPlural()"
+  mode="edit"
+  [initial]="editDraft()"
+  [locked]="locked()"
+  [busy]="busy() === 'edit'"
+  [error]="editError()"
+  testId="termin-edit-dialog"
+  (confirmed)="saveSplit($event)"
+  (closed)="editing.set(false)"
+/>

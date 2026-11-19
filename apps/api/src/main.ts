@@ -1,7 +1,9 @@
 import 'reflect-metadata';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { config } from 'dotenv';
+import { json } from 'express';
 import { resolve } from 'node:path';
 
 // The repository keeps one .env at the root; support both the compiled and ts-node layouts.
@@ -13,7 +15,13 @@ import { loadEnv } from './config/env';
 
 async function bootstrap(): Promise<void> {
   const env = loadEnv();
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Template designs carry their images as data URLs: a larger limit for those routes only.
+  // Registered first, so the general parser below skips bodies it already read.
+  app.use(['/api/v1/template-designs', '/api/v1/template-assets'], json({ limit: '16mb' }));
+  // Company logos (up to 2 MB) and quotation signatures travel as data URLs in JSON bodies.
+  app.useBodyParser('json', { limit: '3mb' });
 
   app.setGlobalPrefix('api/v1');
   app.enableCors({

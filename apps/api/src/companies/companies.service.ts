@@ -26,9 +26,27 @@ export interface CompanyView {
   signatoryTitle: string | null;
   isDefault: boolean;
   updatedAt: string;
+  /** Name, address and phone are filled in: the letterhead every document needs. */
+  profileComplete: boolean;
+  /** Which of those are still missing ("legalName", "address", "phone"). */
+  missingProfileFields: CompanyProfileField[];
+}
+
+/** Fields a company profile needs before documents can carry a proper letterhead. */
+export const REQUIRED_PROFILE_FIELDS = ['legalName', 'address', 'phone'] as const;
+export type CompanyProfileField = (typeof REQUIRED_PROFILE_FIELDS)[number];
+
+export function missingProfileFields(company: Company | null): CompanyProfileField[] {
+  const values: Record<CompanyProfileField, string | null | undefined> = {
+    legalName: company?.legalName,
+    address: company?.addressLine1,
+    phone: company?.phone,
+  };
+  return REQUIRED_PROFILE_FIELDS.filter((field) => !values[field]?.trim());
 }
 
 export function toCompanyView(company: Company): CompanyView {
+  const missing = missingProfileFields(company);
   return {
     id: company.id,
     legalName: company.legalName,
@@ -48,6 +66,8 @@ export function toCompanyView(company: Company): CompanyView {
     signatoryTitle: company.signatoryTitle,
     isDefault: company.isDefault,
     updatedAt: company.updatedAt.toISOString(),
+    profileComplete: missing.length === 0,
+    missingProfileFields: missing,
   };
 }
 

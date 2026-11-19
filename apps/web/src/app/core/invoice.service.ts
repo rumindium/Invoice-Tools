@@ -2,6 +2,9 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiConfigService } from './api-config.service';
+import { Versioned } from './revisions';
+import type { TerminPlan, TerminRef } from './termin.service';
+import { DocumentTemplate } from './template.service';
 
 export type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE' | 'VOID';
 
@@ -18,6 +21,9 @@ export interface InvoiceListRow {
   customerName: string;
   total: number;
   balanceDue: number;
+  revision: number;
+  /** Termin invoices: "termin 2 of 3". */
+  termin: TerminRef | null;
   createdAt: string;
 }
 
@@ -38,7 +44,7 @@ export interface InvoiceItem {
   lineTotal: number;
 }
 
-export interface Invoice {
+export interface Invoice extends Versioned {
   id: string;
   number: string | null;
   status: InvoiceStatus;
@@ -58,7 +64,8 @@ export interface Invoice {
     address: string | null;
     phone: string | null;
     contact: {
-      id: string;
+      /** Null when the attention person was typed on the source quotation. */
+      id: string | null;
       name: string;
       jobTitle: string | null;
       phone: string | null;
@@ -88,9 +95,17 @@ export interface Invoice {
     amountPaid: number;
     balanceDue: number;
   };
+  /** Layout and colour the invoice is drawn with (drafts follow the active template). */
+  template: DocumentTemplate;
   history: InvoiceHistoryEntry[];
   followUps: InvoiceFollowUp[];
   nextStatuses: InvoiceStatus[];
+  /** Quotation → goods receipt → invoice, for invoices generated from a goods receipt. */
+  flow: InvoiceFlow | null;
+  /** The payment termin this invoice bills (its own, or its termin goods receipt's). */
+  termin: TerminRef | null;
+  /** The invoice termin plan this invoice belongs to. */
+  terminPlan: TerminPlan | null;
   notes: string | null;
   terms: string | null;
   issuedAt: string | null;
@@ -100,12 +115,45 @@ export interface Invoice {
   updatedAt: string;
 }
 
+export interface FlowDocument {
+  id: string;
+  number: string | null;
+  date: string;
+  status: string;
+}
+
+export interface InvoiceFlowEvent {
+  id: string;
+  at: string;
+  documentType: 'QUOTATION' | 'GOODS_RECEIPT' | 'INVOICE';
+  documentId: string;
+  documentNumber: string | null;
+  action: string;
+  fromStatus: string | null;
+  toStatus: string | null;
+  reason: string | null;
+  revision: number | null;
+  /** Creation events of termin documents: which termin. */
+  termin?: { sequence: number; count: number; percentage: number } | null;
+  actorName: string | null;
+}
+
+export interface InvoiceFlow {
+  quotation: (FlowDocument & { expired: boolean; total: number; currency: string }) | null;
+  goodsReceipt: FlowDocument & { acceptedQuantity: number; lineCount: number };
+  invoice: FlowDocument & { total: number; currency: string };
+  events: InvoiceFlowEvent[];
+}
+
 export interface InvoiceHistoryEntry {
   id: string;
   action: string;
   fromStatus: InvoiceStatus | null;
   toStatus: InvoiceStatus | null;
   reason: string | null;
+  revision: number | null;
+  /** Termin documents: which termin was created (creation events only). */
+  termin?: { sequence: number; count: number; percentage: number } | null;
   actorName: string | null;
   at: string;
 }
@@ -271,6 +319,21 @@ export class InvoiceService {
     return response.invoice;
   }
 
+  /** Generates the invoice of a received goods receipt (accepted quantities, quotation prices). */
+  async createFromGoodsReceipt(goodsReceiptId: string): Promise<Invoice> {
+    const origin = await this.api.apiOrigin;
+    const response = await firstValueFrom(
+      this.http.post<{ invoice: Invoice }>(
+        `${origin}/api/v1/documents/from-goods-receipt`,
+        { goodsReceiptId },
+        { withCredentials: true },
+      ),
+    );
+
+    await this.loadSummary();
+    return response.invoice;
+  }
+
   async update(id: string, payload: InvoicePayload): Promise<Invoice> {
     const origin = await this.api.apiOrigin;
     const response = await firstValueFrom(
@@ -282,6 +345,49 @@ export class InvoiceService {
     await this.loadInvoices();
     await this.loadSummary();
     return response.invoice;
+  }
+
+  /** Corrects an issued invoice as a new version. */
+  async revise(id: string, payload: InvoicePayload & { reason: string }): Promise<Invoice> {
+    const origin = await this.api.apiOrigin;
+    const response = await firstValueFrom(
+      this.http.post<{ invoice: Invoice }>(`${origin}/api/v1/documents/${id}/revisions`, payload, {
+        withCredentials: true,
+      }),
+    );
+    await this.loadSummary();
+    return response.invoice;
+  }
+
+  async getRevision(id: string, revision: number): Promise<Invoice> {
+    const origin = await this.api.apiOrigin;
+    const response = await firstValueFrom(
+      this.http.get<{ invoice: Invoice }>(
+        `${origin}/api/v1/documents/${id}/revisions/${revision}`,
+        {
+          withCredentials: true,
+        },
+      ),
+    );
+    return response.invoice;
+  }
+
+  async downloadRevisionPdf(id: string, revision: number, filename: string): Promise<void> {
+    const origin = await this.api.apiOrigin;
+    const blob = await firstValueFrom(
+      this.http.get(`${origin}/api/v1/documents/${id}/revisions/${revision}/pdf`, {
+        responseType: 'blob',
+        withCredentials: true,
+      }),
+    );
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   }
 
   async changeStatus(

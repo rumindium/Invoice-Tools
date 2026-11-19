@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiConfigService } from './api-config.service';
 
@@ -22,6 +22,9 @@ export interface Company {
   signatoryTitle: string | null;
   isDefault: boolean;
   updatedAt: string;
+  /** Name, address and phone are filled in (decided by the API). */
+  profileComplete: boolean;
+  missingProfileFields: Array<'legalName' | 'address' | 'phone'>;
 }
 
 export interface CompanyPayload {
@@ -51,6 +54,8 @@ export class CompanyService {
   readonly company = signal<Company | null>(null);
   readonly loading = signal(false);
   readonly loaded = signal(false);
+  /** True once the workspace has a company with a complete letterhead. */
+  readonly profileComplete = computed(() => this.company()?.profileComplete ?? false);
 
   private pending?: Promise<Company | null>;
 
@@ -68,9 +73,17 @@ export class CompanyService {
     return this.pending;
   }
 
+  /**
+   * Creates or updates the company. Updates start from the current profile, so a form that
+   * shows only some fields (the dashboard card, the welcome form) never erases the others;
+   * keys present in `payload` win, even when undefined (e.g. removing the logo).
+   */
   async save(payload: CompanyPayload): Promise<Company> {
     const origin = await this.api.apiOrigin;
     const current = this.company();
+    if (current) {
+      payload = { ...toPayload(current), ...payload };
+    }
     const response = current
       ? await firstValueFrom(
           this.http.patch<{ company: Company }>(
@@ -113,4 +126,25 @@ export class CompanyService {
       this.loaded.set(true);
     }
   }
+}
+
+/** The editable fields of a saved company, as a payload. */
+function toPayload(company: Company): CompanyPayload {
+  const optional = (value: string | null) => value ?? undefined;
+  return {
+    legalName: company.legalName,
+    address: optional(company.address),
+    email: optional(company.email),
+    phone: optional(company.phone),
+    website: optional(company.website),
+    taxId: optional(company.taxId),
+    taxLabel: company.taxLabel,
+    logoDataUrl: optional(company.logoDataUrl),
+    defaultCurrency: company.defaultCurrency,
+    defaultTaxRate: company.defaultTaxRate,
+    defaultPaymentTermDays: company.defaultPaymentTermDays,
+    footerText: optional(company.footerText),
+    signatoryName: optional(company.signatoryName),
+    signatoryTitle: optional(company.signatoryTitle),
+  };
 }

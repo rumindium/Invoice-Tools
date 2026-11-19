@@ -1,6 +1,6 @@
 import { Column, CreateDateColumn, Entity, Index, PrimaryColumn, UpdateDateColumn } from 'typeorm';
 import { decimalTransformer, Decimal } from '../decimal.transformer';
-import { QuotationLabel, TaxMode } from './enums';
+import { DocumentType, QuotationLabel, TaxMode } from './enums';
 
 @Entity({ name: 'companies' })
 export class Company {
@@ -135,8 +135,22 @@ export class DocumentTemplate {
   @Column({ type: 'text' })
   slug!: string;
 
+  /** Which documents the template styles; null for legacy rows. */
+  @Column({
+    name: 'document_type',
+    type: 'enum',
+    enum: DocumentType,
+    enumName: 'DocumentType',
+    nullable: true,
+  })
+  documentType!: DocumentType | null;
+
+  /** A built-in layout key, or `custom` with `designId` pointing at a builder design. */
   @Column({ type: 'text', default: 'classic' })
   layout!: string;
+
+  @Column({ name: 'design_id', type: 'text', nullable: true })
+  designId!: string | null;
 
   @Column({ name: 'paper_size', type: 'text', default: 'A4' })
   paperSize!: string;

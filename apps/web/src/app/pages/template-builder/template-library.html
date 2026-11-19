@@ -1,0 +1,169 @@
+<section class="ui-page library" data-testid="template-library">
+  <header class="ui-page-head">
+    <div>
+      <p class="ui-eyebrow">Templates</p>
+      <h1>Template Builder</h1>
+      <p class="ui-sub">
+        Design your own template for each document type — your logo, text, shapes, signature and
+        data fields. Each type has one template: create it once, then edit it whenever you like.
+      </p>
+    </div>
+  </header>
+
+  @if (error()) {
+  <div class="ui-alert" role="alert" data-testid="library-error">
+    <span>{{ error() }}</span>
+    <button class="ui-link" type="button" (click)="error.set('')">Close</button>
+  </div>
+  } @if (notice(); as note) {
+  <div class="ui-alert ui-alert-success" role="status" data-testid="library-notice">
+    <span>{{ note.text }}</span>
+    @if (note.slot; as slot) {
+    <a class="ui-link" [routerLink]="slot.createLink">{{ slot.createLabel }}</a>
+    }
+  </div>
+  }
+
+  <div class="slots">
+    @for (slot of slots; track slot.kind) {
+    <article
+      class="ui-card slot"
+      [class.is-highlighted]="highlight() === slot.kind"
+      [attr.data-testid]="'slot-' + slot.kind"
+      [attr.aria-labelledby]="'slot-title-' + slot.kind"
+    >
+      <header class="slot-head">
+        <h2 [id]="'slot-title-' + slot.kind">My {{ slot.title }} Template</h2>
+        @if (byKind().get(slot.kind); as design) { @if (isApplied(design)) {
+        <span class="ui-badge ui-badge-green" data-testid="slot-applied">Applied</span>
+        } @else {
+        <span class="ui-badge ui-badge-neutral" data-testid="slot-not-applied">Not applied</span>
+        } } @else if (!loading()) {
+        <span class="ui-badge ui-badge-neutral">Not created</span>
+        }
+      </header>
+
+      @if (loading()) {
+      <div class="slot-loading" aria-hidden="true"></div>
+      } @else if (byKind().get(slot.kind); as design) {
+      <a
+        class="slot-thumb"
+        [routerLink]="['/templates/builder', design.id]"
+        [attr.aria-label]="'Edit ' + design.name"
+      >
+        <app-design-thumb
+          [elements]="design.elements"
+          [page]="design.page"
+          [context]="context(slot.kind)"
+          [width]="220"
+        />
+      </a>
+      <div class="slot-meta">
+        <strong data-testid="slot-name">{{ design.name }}</strong>
+        <span>Edited {{ relative(design.updatedAt) }}</span>
+      </div>
+      <p class="slot-hint">
+        @if (isApplied(design)) { New {{ slot.plural }}, drafts and their PDFs use this template.
+        <a class="ui-link" [routerLink]="slot.templatesLink">Use a built-in layout instead</a>
+        } @else { Apply it to use it for new {{ slot.plural }}, drafts and their PDFs. }
+      </p>
+      <div class="slot-actions">
+        <a
+          class="ui-btn ui-btn-primary"
+          [routerLink]="['/templates/builder', design.id]"
+          data-testid="slot-edit"
+          >Edit template</a
+        >
+        @if (!isApplied(design)) {
+        <button
+          class="ui-btn ui-btn-ghost"
+          type="button"
+          data-testid="slot-apply"
+          [disabled]="busy() === slot.kind"
+          (click)="apply(slot, design)"
+        >
+          {{ busy() === slot.kind ? 'Applying…' : 'Apply to ' + slot.plural }}
+        </button>
+        }
+        <button
+          class="ui-btn ui-btn-ghost"
+          type="button"
+          data-testid="slot-preview"
+          (click)="previewPdf(design)"
+        >
+          Preview PDF
+        </button>
+        <button
+          class="ui-btn ui-btn-danger"
+          type="button"
+          data-testid="slot-delete"
+          [disabled]="busy() === slot.kind"
+          (click)="remove(slot, design)"
+        >
+          Delete
+        </button>
+      </div>
+      } @else {
+      <div class="slot-empty">
+        <p>
+          No {{ slot.singular }} template yet. Pick a starting point — you can change everything in
+          the editor.
+        </p>
+        <div
+          class="starters"
+          role="radiogroup"
+          [attr.aria-label]="'Starting point for ' + slot.plural"
+        >
+          @for (starter of starterPreviews(); track starter.key) {
+          <button
+            type="button"
+            role="radio"
+            class="starter"
+            [class.is-chosen]="starterFor(slot.kind) === starter.key"
+            [attr.aria-checked]="starterFor(slot.kind) === starter.key"
+            [attr.data-testid]="'slot-starter-' + starter.key"
+            (click)="choose(slot.kind, starter.key)"
+          >
+            <app-design-thumb
+              [elements]="starter.elements"
+              [page]="starter.page"
+              [context]="context(slot.kind)"
+              [width]="62"
+            />
+            <span>{{ starter.name }}</span>
+          </button>
+          }
+        </div>
+        <button
+          class="ui-btn ui-btn-primary"
+          type="button"
+          data-testid="slot-create"
+          [disabled]="busy() === slot.kind"
+          (click)="create(slot)"
+        >
+          {{ busy() === slot.kind ? 'Creating…' : 'Create ' + slot.singular + ' template' }}
+        </button>
+      </div>
+      }
+    </article>
+    }
+  </div>
+
+  <section class="ui-card how">
+    <h3>How it works</h3>
+    <ul>
+      <li>
+        <strong>One template per document type.</strong> Edit it as often as you like; delete it to
+        start over.
+      </li>
+      <li>
+        <strong>Apply</strong> makes it the template of new documents and drafts — the same as
+        choosing a layout on the Invoice, Goods Receipt or Quotation Templates pages.
+      </li>
+      <li>
+        <strong>Issued documents keep their look,</strong> even when you edit or delete the template
+        later.
+      </li>
+    </ul>
+  </section>
+</section>

@@ -1,0 +1,118 @@
+<section class="ui-page">
+  <header class="ui-page-head">
+    <div>
+      <a class="back-link" routerLink="/goods-receipts">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M20 12H4M10 6l-6 6 6 6" />
+        </svg>
+        My goods receipts
+      </a>
+      <p class="ui-eyebrow">Goods receipt</p>
+      <h1>New goods receipt</h1>
+      <p class="ui-sub">
+        A goods receipt is generated from an accepted quotation and carries all of its items — or
+        its share of them when the quotation is split into payment termins. Pick the quotation that
+        was delivered.
+      </p>
+    </div>
+  </header>
+
+  @if (error()) {
+  <div class="ui-alert" role="alert">
+    <span>{{ error() }}</span>
+    <button class="ui-link" type="button" (click)="error.set('')">Close</button>
+  </div>
+  } @if (template(); as applied) {
+  <app-template-summary
+    class="new-receipt-template"
+    [template]="applied"
+    changeLink="/templates/goods-receipts"
+    followText="Every goods receipt created here is generated with this template"
+    testId="new-goods-receipt-template"
+  />
+  }
+
+  <section class="ui-card documents-card" aria-labelledby="sources-heading">
+    <div class="documents-toolbar">
+      <span class="toolbar-title" id="sources-heading">Accepted quotations awaiting receipt</span>
+    </div>
+
+    @if (loading()) {
+    <div class="ui-empty"><strong>Loading accepted quotations…</strong></div>
+    } @else if (sources().length === 0) {
+    <div class="ui-empty">
+      <strong>No accepted quotations are waiting for a receipt</strong>
+      <p>Mark a quotation as accepted to receive its goods here.</p>
+      <a class="ui-btn ui-btn-primary" routerLink="/quotations">Open my quotations</a>
+    </div>
+    } @else {
+    <div class="ui-table-wrap">
+      <table class="ui-table documents-table">
+        <thead>
+          <tr>
+            <th>Quotation</th>
+            <th>Recipient</th>
+            <th>Date</th>
+            <th>Items</th>
+            <th>Total</th>
+            <th><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (source of sources(); track source.id) {
+          <tr data-testid="goods-receipt-source">
+            <td>
+              <a class="doc-cell" [routerLink]="['/quotations', source.id]">
+                <span class="kind-mark" aria-hidden="true">Q</span>
+                <span>
+                  <strong>{{ source.number }}</strong>
+                  <span class="ui-muted">Accepted</span>
+                </span>
+              </a>
+            </td>
+            <td>{{ source.recipientName }}</td>
+            <td class="date-cell">{{ formatDate(source.issueDate) }}</td>
+            <td>{{ source.itemCount }}</td>
+            <td class="ui-money">{{ formatMoney(source.total, source.currency) }}</td>
+            <td class="row-action">
+              <button
+                class="ui-btn ui-btn-primary create-receipt"
+                type="button"
+                [disabled]="creating() !== null"
+                [attr.aria-label]="'Create goods receipt for ' + source.number"
+                (click)="choose(source)"
+              >
+                {{ creating() === source.id ? 'Creating…' : 'Create goods receipt' }}
+              </button>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+  </section>
+
+  <app-termin-dialog
+    [open]="choosing() !== null"
+    heading="Create goods receipt"
+    intro="Receive everything in one goods receipt, or split the quotation into payment termins — each termin gets its own goods receipt with its share of every item."
+    [sourceLabel]="(choosing()?.number ?? 'Quotation') + ' · ' + (choosing()?.recipientName ?? '')"
+    [total]="choosing()?.total ?? 0"
+    [currency]="choosing()?.currency ?? 'IDR'"
+    noun="goods receipt"
+    nounPlural="goods receipts"
+    [busy]="creating() !== null"
+    [error]="dialogError()"
+    testId="goods-receipt-dialog"
+    (confirmed)="create($event)"
+    (closed)="choosing.set(null)"
+  />
+</section>

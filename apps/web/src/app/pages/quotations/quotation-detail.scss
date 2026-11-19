@@ -1,0 +1,158 @@
+.quote-grid {
+  grid-template-columns: minmax(0, 660px) minmax(280px, 320px);
+  justify-content: start;
+}
+
+.sheet-column {
+  display: grid;
+  gap: 8px;
+}
+
+.sheet-format {
+  justify-self: start;
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  background: var(--surface);
+  padding: 3px 9px;
+  color: var(--muted);
+  font-size: 9.5px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sheet-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.template-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  background: var(--surface);
+  padding: 3px 10px 3px 4px;
+  color: var(--text);
+  font-size: 10.5px;
+  font-weight: 650;
+}
+
+.template-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.15);
+}
+
+.template-note {
+  color: var(--faint);
+  font-size: 10.5px;
+}
+
+.tracker-step.is-rejected {
+  color: var(--danger, #dc2626);
+  font-weight: 650;
+}
+
+.tracker-step.is-rejected .tracker-dot {
+  border-color: var(--danger, #dc2626);
+  background: var(--danger, #dc2626);
+}
+
+@media (max-width: 1080px) {
+  .quote-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Keep the back link on its own line above the eyebrow. */
+.back-link {
+  display: flex;
+  width: fit-content;
+}
+
+.next-step-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.linked-doc {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 10px 12px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.linked-doc:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.linked-doc .kind-mark {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 7px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 9.5px;
+  font-weight: 700;
+}
+
+.linked-doc-body {
+  display: grid;
+  flex: 1;
+  gap: 1px;
+}
+
+.linked-doc-body strong {
+  font-size: 12px;
+}
+
+.linked-doc-body span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.version-pill {
+  display: inline-block;
+  margin: -2px 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  background: var(--surface);
+  padding: 2px 9px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.revision-banner {
+  align-items: center;
+  justify-content: space-between;
+  border-color: #fcd34d;
+  background: #fffbeb;
+  color: #78350f;
+}
+
+/* "Termin 1 of 3 · 30%" next to the version of termin documents. */
+.termin-pill {
+  display: inline-block;
+  margin: -2px 0 8px 4px;
+  border: 1px solid rgba(37, 99, 235, 0.25);
+  border-radius: 99px;
+  background: var(--accent-soft);
+  padding: 2px 9px;
+  color: var(--accent-ink);
+  font-size: 10px;
+  font-weight: 650;
+}

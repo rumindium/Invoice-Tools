@@ -1,0 +1,320 @@
+/*
+ * Priced document sheet (quotation, invoice) in five layouts. Colours come from the template theme variables set on the
+ * sheet (--t-accent, --t-accent-text, --t-accent-deep, --t-on-accent, --t-soft, --t-tint);
+ * geometry and type mirror the PDF renderer.
+ */
+
+:host {
+  --ink: #111827;
+  --ink-muted: #5b6474;
+  --ink-faint: #8b93a1;
+  --rule: #e5e7eb;
+  --soft-grey: #f3f4f6;
+
+  display: block;
+  container-type: inline-size;
+}
+
+/* A4 portrait (210 × 297): at least the paper's height, growing with long content. */
+.sheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  aspect-ratio: 210 / 297;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.06),
+    0 12px 32px -12px rgba(15, 23, 42, 0.18);
+  padding: 7.5% 7.2% 5%;
+  color: var(--ink);
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+strong {
+  font-weight: 700;
+}
+
+.logo {
+  display: block;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  object-fit: contain;
+}
+
+.issuer {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.issuer-text {
+  display: grid;
+  gap: 1px;
+}
+
+.issuer-text span,
+.company-details span {
+  color: var(--ink-muted);
+  font-size: 9.5px;
+}
+
+.company-name {
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.title-block {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  text-align: right;
+}
+
+.doc-number {
+  color: var(--ink-muted);
+  font-size: 10px;
+}
+
+.label {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--ink-faint);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.recipient {
+  display: grid;
+  align-content: start;
+}
+
+.recipient-name {
+  font-size: 12px;
+}
+
+.recipient-attention {
+  font-size: 9.5px;
+  font-weight: 700;
+}
+
+.recipient-line {
+  color: var(--ink-muted);
+  font-size: 9.5px;
+}
+
+.parties {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 16px 0 18px;
+}
+
+.dates {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-width: 46%;
+  margin: 0;
+}
+
+.dates div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dates dt {
+  color: var(--ink-faint);
+  font-size: 9.5px;
+}
+
+.dates dd {
+  margin: 0;
+  font-size: 9.5px;
+  font-weight: 700;
+}
+
+/* ------------------------------------------------------------ Items table */
+
+.items {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+}
+
+.items th {
+  padding: 7px 6px;
+  color: var(--ink-muted);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.items td {
+  padding: 7px 6px;
+  vertical-align: top;
+}
+
+.items td strong {
+  display: block;
+  font-size: 10px;
+}
+
+.item-description {
+  display: block;
+  color: var(--ink-muted);
+  font-size: 8.5px;
+}
+
+.items .num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.items .col-no {
+  width: 18px;
+}
+
+.items td.col-no {
+  color: var(--ink-muted);
+}
+
+/* ------------------------------------------------------------ Totals, sections, signature */
+
+.totals {
+  display: grid;
+  gap: 4px;
+  width: 46%;
+  margin: 14px 0 0 auto;
+}
+
+.totals-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--ink-muted);
+  font-size: 10px;
+}
+
+.totals-row strong {
+  color: var(--ink);
+  font-weight: 400;
+}
+
+.totals-grand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.text-section {
+  margin-top: 14px;
+}
+
+.section-label {
+  display: flex;
+  align-items: center;
+  color: var(--ink-faint);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.section-marker {
+  display: none;
+}
+
+.text-section p {
+  margin: 3px 0 0;
+  color: var(--ink-muted);
+  font-size: 9.5px;
+  line-height: 1.55;
+  white-space: pre-line;
+}
+
+.signature {
+  display: grid;
+  justify-items: center;
+  align-self: flex-end;
+  width: 210px;
+  margin-top: auto;
+  padding-top: 28px;
+  text-align: center;
+}
+
+.signature-date,
+.signature-greeting {
+  color: var(--ink-muted);
+  font-size: 9.5px;
+}
+
+.signature-image {
+  display: grid;
+  width: 100%;
+  height: 68px;
+  place-items: center;
+  margin: 6px 0;
+  border-bottom: 1px solid #9ca3af;
+}
+
+.signature-image img {
+  max-width: 100%;
+  max-height: 62px;
+  object-fit: contain;
+}
+
+.signature strong {
+  font-size: 11px;
+}
+
+.signature-title {
+  color: var(--ink-muted);
+  font-size: 9px;
+}
+
+/* Paid and balance due under the total. */
+.settlement-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  width: 46%;
+  margin: 4px 0 0 auto;
+  color: var(--ink-muted);
+  font-size: 10px;
+}
+
+.settlement-row strong {
+  color: var(--ink);
+  font-weight: 400;
+}
+
+.settlement-row.is-emphasis,
+.settlement-row.is-emphasis strong {
+  color: var(--t-accent-text);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.text-section.is-danger .section-label,
+.text-section.is-danger p {
+  color: #dc2626;
+}
+
+/* Invoices leave no room for a drawn signature. */
+.signature.is-compact .signature-image {
+  height: 28px;
+}

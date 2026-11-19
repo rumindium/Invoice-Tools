@@ -150,8 +150,14 @@
 
 .nav {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 2px;
+  min-height: 0;
+  margin: 0 -6px 12px;
+  overflow-y: auto;
+  padding: 0 6px;
+  scrollbar-width: thin;
 }
 
 .nav-label-group {
@@ -218,6 +224,18 @@
 .nav-item.is-active .nav-count {
   background: rgba(37, 99, 235, 0.12);
   color: var(--accent-ink);
+}
+
+.nav-new {
+  margin-left: auto;
+  border-radius: 99px;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  padding: 1px 7px;
+  color: #ffffff;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .sidebar-bottom {

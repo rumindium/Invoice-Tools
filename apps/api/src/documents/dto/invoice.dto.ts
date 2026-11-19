@@ -229,3 +229,18 @@ export class ListDocumentsQueryDto {
   @Max(100)
   pageSize?: number;
 }
+
+export class InvoiceFromGoodsReceiptDto {
+  @IsString()
+  @MinLength(1, { message: 'Choose the received goods receipt to invoice.' })
+  @MaxLength(40)
+  goodsReceiptId!: string;
+}
+
+/** A correction of an issued invoice: the full new content plus why. */
+export class InvoiceRevisionDto extends InvoicePayloadDto {
+  @IsString()
+  @MinLength(3, { message: 'Describe what was wrong (at least 3 characters).' })
+  @MaxLength(500)
+  reason!: string;
+}

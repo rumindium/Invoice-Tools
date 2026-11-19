@@ -1,0 +1,152 @@
+@if (text(); as el) {
+<div
+  class="text"
+  [style.font-family]="fontStack(el.fontFamily)"
+  [style.font-size.px]="el.fontSize"
+  [style.font-weight]="el.fontWeight"
+  [style.font-style]="el.italic ? 'italic' : 'normal'"
+  [style.text-decoration]="el.underline ? 'underline' : 'none'"
+  [style.text-transform]="el.uppercase ? 'uppercase' : 'none'"
+  [style.color]="el.color"
+  [style.text-align]="el.align"
+  [style.line-height]="el.lineHeight"
+  [style.letter-spacing.px]="el.letterSpacing"
+  [style.background]="el.background"
+>
+  @if (editing()) {
+  <div
+    #editor
+    class="editor"
+    contenteditable="plaintext-only"
+    role="textbox"
+    aria-multiline="true"
+    tabindex="0"
+    aria-label="Edit text"
+    data-testid="text-editor"
+    spellcheck="false"
+    (blur)="finishEditing($event)"
+    (keydown)="editorKeydown($event)"
+    (pointerdown)="$event.stopPropagation()"
+  ></div>
+  } @else if (preview()) {
+  <span>{{ resolved() }}</span>
+  } @else {
+  <!-- Literal runs sit in tight spans: whitespace around a bare interpolation would show (pre-wrap). -->
+  @for (segment of segments(); track $index) { @if (segment.token) {
+  <span
+    class="field"
+    [class.is-unknown]="!segment.known"
+    [attr.title]="segment.label"
+    [attr.data-token]="segment.token"
+    >{{ segment.text }}</span
+  >
+  } @else {
+  <span>{{ segment.text }}</span>
+  } } @if (!el.text) {
+  <span class="empty-text">Empty text</span>
+  } }
+</div>
+} @else if (shape(); as el) { @if (el.shape === 'rect' || el.shape === 'ellipse') {
+<div
+  class="shape-box"
+  [style.background]="el.fill ?? 'transparent'"
+  [style.border]="el.stroke && el.strokeWidth ? el.strokeWidth + 'px solid ' + el.stroke : null"
+  [style.border-radius]="el.shape === 'ellipse' ? '50%' : el.radius + 'px'"
+></div>
+} @else {
+<svg class="shape-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+  <path
+    [attr.d]="shapePaths[el.shape]"
+    [attr.fill]="el.fill ?? 'none'"
+    [attr.stroke]="el.stroke && el.strokeWidth ? el.stroke : 'none'"
+    [attr.stroke-width]="el.strokeWidth"
+    stroke-linejoin="round"
+    vector-effect="non-scaling-stroke"
+  />
+</svg>
+} } @else if (line(); as el) {
+<div
+  class="line"
+  [style.border-top-width.px]="el.strokeWidth"
+  [style.border-top-style]="el.dash"
+  [style.border-top-color]="el.stroke"
+></div>
+} @else if (image(); as el) { @if (imageSrc(); as src) {
+<img
+  class="image"
+  [src]="src"
+  [alt]="el.name"
+  [style.object-fit]="el.fit"
+  [style.border-radius.px]="el.radius"
+  draggable="false"
+/>
+} @else if (!preview()) {
+<div class="placeholder" [class.is-signature]="el.role === 'signature'">
+  @if (el.role === 'signature') {
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M3 17c3-1 4-9 6-9s-1 9 2 9 3-5 5-5 1 4 5 4" />
+  </svg>
+  <span>Signature</span>
+  } @else {
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <rect x="3" y="4" width="18" height="16" rx="2" />
+    <path d="m3 16 5-5 4 4 3-3 6 6" />
+  </svg>
+  <span>Image</span>
+  }
+</div>
+} } @else if (table(); as el) {
+<table
+  [class]="'table borders-' + el.borders"
+  [style.font-family]="fontStack(el.fontFamily)"
+  [style.font-size.px]="el.fontSize"
+  [style.color]="el.textColor"
+  [style.--border]="el.borderColor"
+>
+  <thead>
+    <tr [style.background]="el.headerFill" [style.color]="el.headerText">
+      @for (column of visibleColumns(); track column.key) {
+      <th [class.num]="isNumeric(column.key)" [attr.data-col]="column.key">
+        {{ columnLabel(column.key, column.label) }}
+      </th>
+      }
+    </tr>
+  </thead>
+  <tbody>
+    @for (row of context().rows; track row.index; let odd = $odd) {
+    <tr [style.background]="el.stripes && odd ? el.stripeFill : null">
+      @for (column of visibleColumns(); track column.key) {
+      <td [class.num]="isNumeric(column.key)" [attr.data-col]="column.key">
+        @if (column.key === 'description') {
+        <strong>{{ row.description }}</strong>
+        @if (row.detail) {
+        <span class="detail">{{ row.detail }}</span>
+        } } @else { {{ row[column.key] }} }
+      </td>
+      }
+    </tr>
+    }
+  </tbody>
+</table>
+} @else if (totals(); as el) {
+<div
+  class="totals"
+  [style.font-family]="fontStack(el.fontFamily)"
+  [style.font-size.px]="el.fontSize"
+  [style.color]="el.textColor"
+>
+  @for (row of totalsRows(); track row.key) {
+  <div
+    class="totals-row"
+    [class.is-total]="row.key === 'total'"
+    [class.is-balance]="row.key === 'balance'"
+    [style.background]="row.key === 'balance' ? el.accentFill : null"
+    [style.color]="row.key === 'balance' ? el.accentText : null"
+    [attr.data-row]="row.key"
+  >
+    <span [style.color]="row.key === 'balance' ? null : el.labelColor">{{ row.label }}</span>
+    <strong>{{ row.value }}</strong>
+  </div>
+  }
+</div>
+}

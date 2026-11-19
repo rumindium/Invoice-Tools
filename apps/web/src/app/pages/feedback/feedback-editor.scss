@@ -1,0 +1,60 @@
+.back-link {
+  display: flex;
+  width: fit-content;
+}
+
+.source-picker {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.source-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  padding: 10px 11px;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.source-option svg {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  color: var(--muted);
+}
+
+.source-option:hover {
+  border-color: var(--accent);
+}
+
+.source-option.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+}
+
+.source-option.is-active svg {
+  color: var(--accent);
+}
+
+.contact-field {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+
+@media (max-width: 760px) {
+  .source-picker {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

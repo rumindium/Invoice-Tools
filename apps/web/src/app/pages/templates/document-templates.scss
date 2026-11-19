@@ -1,0 +1,357 @@
+.active-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 9px 14px 9px 10px;
+}
+
+.active-summary div {
+  display: grid;
+}
+
+.active-summary span {
+  color: var(--faint);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.active-summary strong {
+  font-size: 12.5px;
+}
+
+.active-summary .active-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.12);
+}
+
+/* ------------------------------------------------------------ Gallery */
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 26px;
+}
+
+.template-card {
+  display: grid;
+  align-content: start;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color 120ms ease-out,
+    box-shadow 120ms ease-out,
+    transform 120ms ease-out;
+}
+
+.template-card:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px -18px rgba(15, 23, 42, 0.45);
+}
+
+.template-card.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+
+.thumb {
+  display: flex;
+  height: 200px;
+  justify-content: center;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  padding: 12px 10px 0;
+}
+
+/* The real sheet, drawn at full size and zoomed down to a thumbnail. */
+.thumb-sheet {
+  width: 600px;
+  flex: none;
+  zoom: 0.3;
+  pointer-events: none;
+}
+
+.card-body {
+  display: grid;
+  gap: 3px;
+  padding: 11px 13px 13px;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.card-title strong {
+  font-size: 13.5px;
+}
+
+.card-tagline {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+/* ------------------------------------------------------------ Workbench */
+
+.workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 640px) minmax(300px, 1fr);
+  align-items: start;
+  gap: 24px;
+}
+
+.preview-column {
+  display: grid;
+  gap: 8px;
+}
+
+.preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.preview-format {
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  background: var(--surface);
+  padding: 3px 9px;
+  color: var(--muted);
+  font-size: 9.5px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.preview-hint {
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.side-column {
+  position: sticky;
+  top: 84px;
+  display: grid;
+  gap: 16px;
+}
+
+.customiser {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.customiser-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.customiser-head h2 {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.customiser-description {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.highlights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.highlights li {
+  border-radius: 99px;
+  background: var(--surface-2);
+  padding: 3px 9px;
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.color-section {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+.color-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.color-head h3,
+.how-it-works h3 {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.color-head .ui-link:disabled {
+  color: var(--faint);
+  cursor: default;
+}
+
+.color-hint {
+  margin: -4px 0 0;
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.swatch {
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.12);
+  cursor: pointer;
+  transition: transform 100ms ease-out;
+}
+
+.swatch:hover {
+  transform: scale(1.08);
+}
+
+.swatch.is-on {
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 4px var(--text);
+}
+
+.custom-color {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.picker {
+  display: grid;
+  width: 40px;
+  height: 38px;
+  flex: none;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.picker input {
+  width: 56px;
+  height: 52px;
+  margin: -8px;
+  border: 0;
+  cursor: pointer;
+}
+
+.hex-field {
+  flex: 1;
+}
+
+.hex-field .ui-input {
+  font-family: var(--font-mono);
+  text-transform: lowercase;
+}
+
+.customiser-actions .ui-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+  box-shadow: none;
+}
+
+.customiser-actions {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+.how-it-works {
+  display: grid;
+  gap: 10px;
+  padding: 16px 18px;
+}
+
+.how-it-works ul {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding-left: 16px;
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.how-it-works strong {
+  color: var(--text);
+}
+
+.applied-at {
+  margin: 0;
+  color: var(--faint);
+  font-size: 10.5px;
+}
+
+@media (max-width: 1280px) {
+  .gallery {
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  }
+}
+
+@media (max-width: 1080px) {
+  .workbench {
+    grid-template-columns: 1fr;
+  }
+
+  .side-column {
+    position: static;
+    order: -1;
+  }
+}
+
+.gallery-heading {
+  margin: 0 0 12px;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}

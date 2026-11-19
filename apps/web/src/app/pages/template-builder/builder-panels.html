@@ -1,0 +1,331 @@
+@switch (store.panel()) {
+<!-- ================================================================= Templates -->
+@case ('templates') {
+<section class="section" data-testid="panel-templates">
+  <h3>Starter templates</h3>
+  <p class="lede">Applying a template replaces this page. Undo brings your work back.</p>
+  <div class="thumb-grid">
+    @for (starter of starters(); track starter.key) {
+    <button
+      type="button"
+      class="thumb-card"
+      [attr.data-testid]="'starter-' + starter.key"
+      [attr.aria-label]="'Apply ' + starter.name + ' template'"
+      (click)="applyStarter(starter.key)"
+    >
+      <app-design-thumb
+        [elements]="starter.elements"
+        [page]="starter.page"
+        [context]="store.context()"
+        [width]="136"
+      />
+      <strong>{{ starter.name }}</strong>
+      <span>{{ starter.description }}</span>
+    </button>
+    }
+  </div>
+
+  <h3>My templates</h3>
+  <p class="lede">One template per document type. Switch to another one here.</p>
+  <ul class="design-list" data-testid="design-list">
+    @for (design of savedDesigns(); track design.id) {
+    <li class="design-row" [class.is-current]="design.id === store.design().id">
+      <button
+        type="button"
+        class="design-open"
+        [attr.data-testid]="'design-' + design.id"
+        [attr.aria-current]="design.id === store.design().id"
+        (click)="open(design)"
+      >
+        <app-design-thumb
+          [elements]="design.elements"
+          [page]="design.page"
+          [context]="store.context()"
+          [width]="52"
+        />
+        <span class="design-meta">
+          <strong>{{ design.name }}</strong>
+          <span>{{ kindLabels[design.kind] }} · {{ relative(design.updatedAt) }}</span>
+          @if (design.appliedTo.length) {
+          <span class="in-use" [attr.data-testid]="'design-in-use-' + design.id">
+            In use for {{ inUseLabel(design.appliedTo) }}
+          </span>
+          }
+        </span>
+      </button>
+    </li>
+    }
+  </ul>
+</section>
+}
+
+<!-- ================================================================= Elements -->
+@case ('elements') {
+<section class="section" data-testid="panel-elements">
+  <h3>Document blocks</h3>
+  <p class="lede">Live blocks that fill in with each document’s data.</p>
+  <div class="block-grid">
+    @for (tile of blockTiles; track tile.preset) {
+    <button
+      type="button"
+      class="block-tile"
+      draggable="true"
+      [attr.data-testid]="'tile-' + tile.preset"
+      (click)="insert({ preset: tile.preset })"
+      (dragstart)="dragStart($event, { preset: tile.preset })"
+    >
+      <span class="block-icon"><app-tb-icon [name]="tile.icon" /></span>
+      <strong>{{ tile.label }}</strong>
+      <span>{{ tile.hint }}</span>
+    </button>
+    }
+  </div>
+
+  <h3>Shapes</h3>
+  <div class="shape-grid">
+    @for (tile of shapeTiles; track tile.preset) {
+    <button
+      type="button"
+      class="shape-tile"
+      draggable="true"
+      [title]="tile.label"
+      [attr.aria-label]="'Add ' + tile.label"
+      [attr.data-testid]="'tile-' + tile.preset"
+      (click)="insert({ preset: tile.preset })"
+      (dragstart)="dragStart($event, { preset: tile.preset })"
+    >
+      @switch (tile.preset) { @case ('rect') { <span class="sw sw-rect"></span> } @case
+      ('rect-rounded') { <span class="sw sw-rect rounded"></span> } @case ('rect-outline') {
+      <span class="sw sw-rect outline"></span> } @case ('ellipse') {
+      <span class="sw sw-circle"></span> } @case ('ellipse-outline') {
+      <span class="sw sw-circle outline"></span> } @default {
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <path [attr.d]="shapePath(tile.preset)" />
+      </svg>
+      } }
+    </button>
+    }
+  </div>
+
+  <h3>Lines</h3>
+  <div class="line-grid">
+    @for (tile of lineTiles; track tile.preset) {
+    <button
+      type="button"
+      class="line-tile"
+      draggable="true"
+      [title]="tile.label"
+      [attr.aria-label]="'Add ' + tile.label"
+      [attr.data-testid]="'tile-' + tile.preset"
+      (click)="insert({ preset: tile.preset })"
+      (dragstart)="dragStart($event, { preset: tile.preset })"
+    >
+      <span [class]="'ln ' + tile.preset"></span>
+    </button>
+    }
+  </div>
+</section>
+}
+
+<!-- ================================================================= Text -->
+@case ('text') {
+<section class="section" data-testid="panel-text">
+  <button
+    type="button"
+    class="primary-tile"
+    draggable="true"
+    data-testid="add-text-box"
+    (click)="insert({ preset: 'body' })"
+    (dragstart)="dragStart($event, { preset: 'body' })"
+  >
+    <app-tb-icon name="text" /> Add a text box
+  </button>
+  <h3>Default text styles</h3>
+  <div class="text-stack">
+    <button
+      type="button"
+      class="text-tile heading"
+      draggable="true"
+      data-testid="tile-heading"
+      (click)="insert({ preset: 'heading' })"
+      (dragstart)="dragStart($event, { preset: 'heading' })"
+    >
+      Add a heading
+    </button>
+    <button
+      type="button"
+      class="text-tile subheading"
+      draggable="true"
+      data-testid="tile-subheading"
+      (click)="insert({ preset: 'subheading' })"
+      (dragstart)="dragStart($event, { preset: 'subheading' })"
+    >
+      Add a subheading
+    </button>
+    <button
+      type="button"
+      class="text-tile body"
+      draggable="true"
+      data-testid="tile-body"
+      (click)="insert({ preset: 'body' })"
+      (dragstart)="dragStart($event, { preset: 'body' })"
+    >
+      Add a little bit of body text
+    </button>
+    <button
+      type="button"
+      class="text-tile caption"
+      draggable="true"
+      data-testid="tile-caption"
+      (click)="insert({ preset: 'caption' })"
+      (dragstart)="dragStart($event, { preset: 'caption' })"
+    >
+      SMALL LABEL
+    </button>
+  </div>
+
+  <h3>Text combinations</h3>
+  <div class="combo-grid">
+    @for (combo of textCombos; track combo.preset) {
+    <button
+      type="button"
+      class="combo-tile"
+      draggable="true"
+      [attr.data-testid]="'combo-' + combo.preset"
+      (click)="insert({ preset: combo.preset })"
+      (dragstart)="dragStart($event, { preset: combo.preset })"
+    >
+      <strong [style.color]="store.design().accentColor">{{ combo.sample }}</strong>
+      <span>{{ combo.sub }}</span>
+    </button>
+    }
+  </div>
+</section>
+}
+
+<!-- ================================================================= Brand & uploads -->
+@case ('brand') {
+<section class="section" data-testid="panel-brand">
+  <h3>Company logo</h3>
+  <button
+    type="button"
+    class="logo-card"
+    draggable="true"
+    data-testid="insert-logo"
+    (click)="insert({ preset: 'logo' })"
+    (dragstart)="dragStart($event, { preset: 'logo' })"
+  >
+    <img [src]="store.context().logoSrc" alt="Company logo" />
+    <span>
+      <strong>{{ hasCompanyLogo() ? 'Your logo' : 'Placeholder logo' }}</strong>
+      <span>Stays in sync with your company profile</span>
+    </span>
+  </button>
+  @if (!hasCompanyLogo()) {
+  <p class="lede">
+    No logo yet. <a routerLink="/company">Add one in your company profile</a> and every template
+    picks it up.
+  </p>
+  }
+
+  <h3>Brand colour</h3>
+  <p class="lede">Repaints everything that uses the current brand colour.</p>
+  <div class="brand-row">
+    @for (color of brandColors; track color) {
+    <button
+      type="button"
+      class="brand-swatch"
+      [class.is-active]="store.design().accentColor === color"
+      [style.background]="color"
+      [attr.aria-label]="'Use brand colour ' + color"
+      [attr.data-testid]="'brand-' + color"
+      (click)="store.setAccent(color)"
+    ></button>
+    }
+  </div>
+
+  <h3>Uploads</h3>
+  <label class="primary-tile upload" [class.is-busy]="uploading()">
+    <app-tb-icon name="upload" /> {{ uploading() ? 'Uploading…' : 'Upload images' }}
+    <input
+      type="file"
+      accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+      multiple
+      hidden
+      data-testid="upload-input"
+      (change)="upload($event)"
+    />
+  </label>
+  <p class="lede">PNG, JPEG, WebP, GIF or SVG. You can also drop files straight onto the page.</p>
+  <div class="upload-grid" data-testid="upload-grid">
+    @for (asset of uploads(); track asset.id) {
+    <div class="upload-item">
+      <button
+        type="button"
+        class="upload-thumb"
+        draggable="true"
+        [attr.aria-label]="'Add ' + asset.name"
+        data-testid="upload-item"
+        (click)="insert({ preset: 'image', data: asset.src })"
+        (dragstart)="dragStart($event, { preset: 'image', data: asset.src })"
+      >
+        <img [src]="asset.src" [alt]="asset.name" />
+      </button>
+      <button
+        type="button"
+        class="remove"
+        [attr.aria-label]="'Remove ' + asset.name"
+        (click)="removeAsset(asset)"
+      >
+        <app-tb-icon name="close" [size]="12" />
+      </button>
+    </div>
+    } @empty {
+    <p class="empty">Your uploads will appear here.</p>
+    }
+  </div>
+</section>
+}
+
+<!-- ================================================================= Fields -->
+@case ('fields') {
+<section class="section" data-testid="panel-fields">
+  <p class="lede">
+    Fields are replaced with real data on every document. @if (selectedText()) {
+    <strong>Click a field to add it to the selected text.</strong>
+    } @else { Click to add, or drag onto the page. }
+  </p>
+  <div class="search">
+    <app-tb-icon name="search" [size]="16" />
+    <input
+      type="search"
+      placeholder="Search fields"
+      aria-label="Search fields"
+      data-testid="field-search"
+      [value]="fieldQuery()"
+      (input)="fieldQuery.set($any($event.target).value)"
+    />
+  </div>
+  @for (group of fieldGroups(); track group.group) {
+  <h3>{{ group.group }}</h3>
+  <div class="field-list">
+    @for (field of group.fields; track field.token) {
+    <button
+      type="button"
+      class="field-chip"
+      draggable="true"
+      [attr.data-testid]="'field-' + field.token"
+      (click)="insertField(field.token)"
+      (dragstart)="dragStart($event, { preset: 'field', data: field.token })"
+    >
+      <span class="field-name">{{ field.label }}</span>
+      <span class="field-sample">{{ field.sample || '—' }}</span>
+      <code>{{ field.code }}</code>
+    </button>
+    }
+  </div>
+  } @empty {
+  <p class="empty">No field matches “{{ fieldQuery() }}”.</p>
+  }
+</section>
+} }

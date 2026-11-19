@@ -4,10 +4,14 @@ import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-va
 export const AUDIT_TARGET_TYPES = [
   'user',
   'invoice',
+  'quotation',
+  'goods_receipt',
   'customer',
   'item',
   'unit',
   'company',
+  'feedback',
+  'template',
 ] as const;
 
 export type AuditTargetType = (typeof AUDIT_TARGET_TYPES)[number];

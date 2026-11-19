@@ -1,0 +1,611 @@
+<div class="bar" role="toolbar" aria-label="Element properties" data-testid="builder-toolbar">
+  <div class="group-left">
+    @if (selected().length === 0) {
+    <!-- Page -->
+    <span class="mode" data-testid="toolbar-mode">Page</span>
+    <app-builder-color
+      label="Background colour"
+      testId="page-background"
+      [value]="design().page.background"
+      (picked)="store.setPage({ background: $event ?? '#ffffff' }, 'page-bg')"
+    />
+    <select
+      class="tb-select"
+      aria-label="Page size"
+      data-testid="page-size"
+      [value]="design().page.size"
+      (change)="pageSize($event)"
+    >
+      <option value="A4">A4</option>
+      <option value="Letter">Letter</option>
+    </select>
+    <div class="seg" role="group" aria-label="Orientation">
+      <button
+        type="button"
+        class="tb-icon"
+        title="Portrait"
+        aria-label="Portrait"
+        [class.is-on]="design().page.orientation === 'portrait'"
+        (click)="orientation('portrait')"
+      >
+        <app-tb-icon name="page" />
+      </button>
+      <button
+        type="button"
+        class="tb-icon"
+        title="Landscape"
+        aria-label="Landscape"
+        data-testid="orientation-landscape"
+        [class.is-on]="design().page.orientation === 'landscape'"
+        (click)="orientation('landscape')"
+      >
+        <app-tb-icon name="landscape" />
+      </button>
+    </div>
+    <span class="sep"></span>
+    <span class="caption">Brand colour</span>
+    <app-builder-color
+      label="Brand colour (repaints the design)"
+      testId="brand-color"
+      [value]="design().accentColor"
+      (picked)="$event && store.setAccent($event)"
+    />
+    <span class="hint">Select an element to edit it · double-click text to type</span>
+    } @else if (selected().length > 1 && !store.selectionIsGroup()) {
+    <!-- Multiple -->
+    <span class="mode" data-testid="toolbar-mode">{{ selected().length }} selected</span>
+    <button type="button" class="tb-btn" data-popover-toggle (click)="toggle('align', $event)">
+      <app-tb-icon name="alignHCenter" /> Align
+    </button>
+    <button type="button" class="tb-btn" data-testid="group-button" (click)="store.group()">
+      <app-tb-icon name="group" /> Group
+    </button>
+    } @else if (store.selectionIsGroup()) {
+    <span class="mode" data-testid="toolbar-mode">Group · {{ selected().length }}</span>
+    <button type="button" class="tb-btn" data-testid="ungroup-button" (click)="store.ungroup()">
+      <app-tb-icon name="ungroup" /> Ungroup
+    </button>
+    <button type="button" class="tb-btn" data-popover-toggle (click)="toggle('align', $event)">
+      <app-tb-icon name="alignHCenter" /> Align to page
+    </button>
+    } @else {
+    <!-- Font controls: text, table, totals -->
+    @if (typed(); as el) {
+    <select
+      class="tb-select font"
+      aria-label="Font"
+      data-testid="font-family"
+      [value]="el.fontFamily"
+      (change)="patch({ fontFamily: value($event) })"
+    >
+      @for (font of fonts; track font.key) {
+      <option [value]="font.key">{{ font.label }}</option>
+      }
+    </select>
+    <div class="stepper" role="group" aria-label="Font size">
+      <button type="button" aria-label="Decrease font size" (click)="stepFont(-1)">
+        <app-tb-icon name="minus" [size]="14" />
+      </button>
+      <input
+        type="number"
+        aria-label="Font size"
+        data-testid="font-size"
+        min="4"
+        max="400"
+        step="0.5"
+        [value]="el.fontSize"
+        (change)="fontSize(number($event))"
+      />
+      <button type="button" aria-label="Increase font size" (click)="stepFont(1)">
+        <app-tb-icon name="plus" [size]="14" />
+      </button>
+    </div>
+    } @if (text(); as el) {
+    <app-builder-color
+      mode="text"
+      label="Text colour"
+      testId="text-color"
+      [value]="el.color"
+      (picked)="patch({ color: $event ?? '#000000' }, 'text-color')"
+    />
+    <button
+      type="button"
+      class="tb-icon"
+      title="Bold"
+      aria-label="Bold"
+      data-testid="text-bold"
+      [class.is-on]="el.fontWeight >= 600"
+      [attr.aria-pressed]="el.fontWeight >= 600"
+      (click)="patch({ fontWeight: el.fontWeight >= 600 ? 400 : 700 })"
+    >
+      <app-tb-icon name="bold" />
+    </button>
+    <button
+      type="button"
+      class="tb-icon"
+      title="Italic"
+      aria-label="Italic"
+      data-testid="text-italic"
+      [class.is-on]="el.italic"
+      [attr.aria-pressed]="el.italic"
+      (click)="patch({ italic: !el.italic })"
+    >
+      <app-tb-icon name="italic" />
+    </button>
+    <button
+      type="button"
+      class="tb-icon"
+      title="Underline"
+      aria-label="Underline"
+      [class.is-on]="el.underline"
+      [attr.aria-pressed]="el.underline"
+      (click)="patch({ underline: !el.underline })"
+    >
+      <app-tb-icon name="underline" />
+    </button>
+    <button
+      type="button"
+      class="tb-icon"
+      title="Uppercase"
+      aria-label="Uppercase"
+      [class.is-on]="el.uppercase"
+      [attr.aria-pressed]="el.uppercase"
+      (click)="patch({ uppercase: !el.uppercase })"
+    >
+      <app-tb-icon name="uppercase" />
+    </button>
+    <button
+      type="button"
+      class="tb-icon"
+      data-testid="text-align"
+      [title]="'Alignment: ' + el.align"
+      [attr.aria-label]="'Alignment: ' + el.align"
+      (click)="cycleAlign()"
+    >
+      <app-tb-icon [name]="alignIcon[el.align]" />
+    </button>
+    <button
+      type="button"
+      class="tb-icon"
+      title="Spacing"
+      aria-label="Spacing"
+      data-popover-toggle
+      [class.is-on]="popover() === 'spacing'"
+      (click)="toggle('spacing', $event)"
+    >
+      <app-tb-icon name="spacing" />
+    </button>
+    <app-builder-color
+      label="Highlight"
+      testId="text-highlight"
+      [allowNone]="true"
+      [value]="el.background"
+      (picked)="patch({ background: $event }, 'text-bg')"
+    />
+    <button type="button" class="tb-btn" (click)="store.panel.set('fields')">
+      <app-tb-icon name="fields" /> Field
+    </button>
+    } @if (shape(); as el) {
+    <app-builder-color
+      label="Fill"
+      testId="shape-fill"
+      [allowNone]="true"
+      [value]="el.fill"
+      (picked)="patch({ fill: $event }, 'fill')"
+    />
+    <app-builder-color
+      label="Border colour"
+      testId="shape-stroke"
+      [allowNone]="true"
+      [value]="el.stroke"
+      (picked)="patch({ stroke: $event, strokeWidth: $event && !el.strokeWidth ? 3 : el.strokeWidth }, 'stroke')"
+    />
+    <div class="stepper" role="group" aria-label="Border width">
+      <span class="stepper-label">Border</span>
+      <input
+        type="number"
+        aria-label="Border width"
+        min="0"
+        max="60"
+        [value]="el.strokeWidth"
+        (change)="strokeWidth(number($event))"
+      />
+    </div>
+    @if (el.shape === 'rect') {
+    <button
+      type="button"
+      class="tb-btn"
+      data-popover-toggle
+      data-testid="corners-button"
+      (click)="toggle('corners', $event)"
+    >
+      Corners
+    </button>
+    } } @if (line(); as el) {
+    <app-builder-color
+      label="Line colour"
+      testId="line-color"
+      [value]="el.stroke"
+      (picked)="patch({ stroke: $event ?? '#000000' }, 'stroke')"
+    />
+    <div class="stepper" role="group" aria-label="Line weight">
+      <span class="stepper-label">Weight</span>
+      <input
+        type="number"
+        aria-label="Line weight"
+        min="1"
+        max="60"
+        [value]="el.strokeWidth"
+        (change)="lineWidth(number($event))"
+      />
+    </div>
+    <select class="tb-select" aria-label="Line style" [value]="el.dash" (change)="dash($event)">
+      <option value="solid">Solid</option>
+      <option value="dashed">Dashed</option>
+      <option value="dotted">Dotted</option>
+    </select>
+    } @if (image(); as el) {
+    <label class="tb-btn">
+      <app-tb-icon name="replace" /> Replace
+      <input
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+        hidden
+        data-testid="image-replace"
+        (change)="replaceImage($event)"
+      />
+    </label>
+    @if (el.role === 'signature') {
+    <button type="button" class="tb-btn" (click)="store.panel.set('signature')">
+      <app-tb-icon name="signature" /> Draw signature
+    </button>
+    } @if (el.role !== 'signature' && (el.role !== 'logo' || el.src)) {
+    <button type="button" class="tb-btn" (click)="useCompanyLogo()">Use company logo</button>
+    }
+    <div class="seg" role="group" aria-label="Image fit">
+      <button
+        type="button"
+        class="tb-btn"
+        [class.is-on]="el.fit === 'contain'"
+        (click)="patch({ fit: 'contain' })"
+      >
+        Fit
+      </button>
+      <button
+        type="button"
+        class="tb-btn"
+        [class.is-on]="el.fit === 'cover'"
+        (click)="patch({ fit: 'cover' })"
+      >
+        Fill
+      </button>
+    </div>
+    <button type="button" class="tb-btn" data-popover-toggle (click)="toggle('corners', $event)">
+      Corners
+    </button>
+    } @if (table(); as el) {
+    <app-builder-color
+      label="Header fill"
+      testId="table-header-fill"
+      [value]="el.headerFill"
+      (picked)="patch({ headerFill: $event ?? '#ffffff' }, 'header-fill')"
+    />
+    <app-builder-color
+      mode="text"
+      label="Header text"
+      [value]="el.headerText"
+      (picked)="patch({ headerText: $event ?? '#000000' }, 'header-text')"
+    />
+    <app-builder-color
+      mode="text"
+      label="Body text"
+      [value]="el.textColor"
+      (picked)="patch({ textColor: $event ?? '#000000' }, 'text-color')"
+    />
+    <button
+      type="button"
+      class="tb-btn"
+      data-testid="table-stripes"
+      [class.is-on]="el.stripes"
+      [attr.aria-pressed]="el.stripes"
+      (click)="patch({ stripes: !el.stripes })"
+    >
+      <app-tb-icon name="rows" /> Stripes
+    </button>
+    <select
+      class="tb-select"
+      aria-label="Borders"
+      [value]="el.borders"
+      (change)="patch({ borders: $any(value($event)) })"
+    >
+      <option value="rows">Row lines</option>
+      <option value="grid">Grid</option>
+      <option value="none">No lines</option>
+    </select>
+    <button
+      type="button"
+      class="tb-btn"
+      data-popover-toggle
+      data-testid="table-columns"
+      (click)="toggle('columns', $event)"
+    >
+      <app-tb-icon name="columns" /> Columns
+    </button>
+    } @if (totals(); as el) {
+    <app-builder-color
+      label="Highlight fill"
+      testId="totals-accent"
+      [value]="el.accentFill"
+      (picked)="patch({ accentFill: $event ?? '#000000' }, 'accent-fill')"
+    />
+    <app-builder-color
+      mode="text"
+      label="Text colour"
+      [value]="el.textColor"
+      (picked)="patch({ textColor: $event ?? '#000000' }, 'text-color')"
+    />
+    <button
+      type="button"
+      class="tb-btn"
+      data-popover-toggle
+      data-testid="totals-rows"
+      (click)="toggle('rows', $event)"
+    >
+      <app-tb-icon name="rows" /> Rows
+    </button>
+    } }
+  </div>
+
+  @if (selected().length > 0) {
+  <div class="group-right">
+    <button
+      type="button"
+      class="tb-icon"
+      title="Transparency"
+      aria-label="Transparency"
+      data-popover-toggle
+      data-testid="transparency-button"
+      (click)="toggle('transparency', $event)"
+    >
+      <app-tb-icon name="transparency" />
+    </button>
+    <button
+      type="button"
+      class="tb-btn"
+      data-popover-toggle
+      data-testid="position-button"
+      (click)="toggle('position', $event)"
+    >
+      Position
+    </button>
+    <span class="sep"></span>
+    <button
+      type="button"
+      class="tb-icon"
+      data-testid="lock-button"
+      [title]="allLocked() ? 'Unlock' : 'Lock'"
+      [attr.aria-label]="allLocked() ? 'Unlock' : 'Lock'"
+      [class.is-on]="allLocked()"
+      (click)="store.toggleLock()"
+    >
+      <app-tb-icon [name]="allLocked() ? 'lock' : 'unlock'" />
+    </button>
+    <button
+      type="button"
+      class="tb-icon"
+      title="Duplicate (Ctrl+D)"
+      aria-label="Duplicate"
+      data-testid="duplicate-button"
+      (click)="store.duplicateSelected()"
+    >
+      <app-tb-icon name="copy" />
+    </button>
+    <button
+      type="button"
+      class="tb-icon danger"
+      title="Delete (Del)"
+      aria-label="Delete"
+      data-testid="delete-button"
+      (click)="store.removeSelected()"
+    >
+      <app-tb-icon name="trash" />
+    </button>
+  </div>
+  }
+</div>
+
+@if (popover(); as key) {
+<div
+  class="tb-pop"
+  role="dialog"
+  [attr.aria-label]="key"
+  [attr.data-testid]="'popover-' + key"
+  [style.left.px]="popoverAt().left"
+  [style.top.px]="popoverAt().top"
+>
+  @switch (key) { @case ('spacing') { @if (text(); as el) {
+  <div class="slider">
+    <span>Letter spacing</span>
+    <input
+      type="range"
+      min="-2"
+      max="20"
+      step="0.1"
+      aria-label="Letter spacing"
+      [value]="el.letterSpacing"
+      (input)="patch({ letterSpacing: number($event) }, 'letter-spacing')"
+    />
+    <output>{{ el.letterSpacing }}</output>
+  </div>
+  <div class="slider">
+    <span>Line spacing</span>
+    <input
+      type="range"
+      min="0.8"
+      max="3"
+      step="0.05"
+      aria-label="Line spacing"
+      [value]="el.lineHeight"
+      (input)="patch({ lineHeight: number($event) }, 'line-height')"
+    />
+    <output>{{ el.lineHeight }}</output>
+  </div>
+  } } @case ('transparency') {
+  <div class="slider">
+    <span>Transparency</span>
+    <input
+      type="range"
+      min="0"
+      max="100"
+      aria-label="Opacity"
+      data-testid="opacity-slider"
+      [value]="opacity()"
+      (input)="patch({ opacity: number($event) / 100 }, 'opacity')"
+    />
+    <output>{{ opacity() }}</output>
+  </div>
+  } @case ('corners') { @if (single(); as el) {
+  <div class="slider">
+    <span>Corner rounding</span>
+    <input
+      type="range"
+      min="0"
+      max="200"
+      aria-label="Corner rounding"
+      [value]="$any(el).radius"
+      (input)="patch({ radius: number($event) }, 'radius')"
+    />
+    <output>{{ $any(el).radius }}</output>
+  </div>
+  } } @case ('columns') { @if (table(); as el) {
+  <p class="pop-title">Columns</p>
+  @for (column of el.columns; track column.key) {
+  <div class="column-row">
+    <input
+      type="checkbox"
+      [checked]="column.visible"
+      [attr.aria-label]="'Show ' + column.label"
+      [attr.data-testid]="'column-toggle-' + column.key"
+      (change)="toggleColumn(el, column.key)"
+    />
+    <input
+      class="column-label"
+      [value]="column.label"
+      [attr.aria-label]="'Label for ' + column.key"
+      (input)="renameColumn(el, column.key, $event)"
+    />
+  </div>
+  } } } @case ('rows') { @if (totals(); as el) {
+  <p class="pop-title">Rows</p>
+  @for (key of totalsKeys; track key) {
+  <label class="check-row">
+    <input
+      type="checkbox"
+      [checked]="el.rows[key]"
+      [attr.data-testid]="'totals-toggle-' + key"
+      (change)="toggleRow(el, key)"
+    />
+    {{ totalsLabels[key] }}
+  </label>
+  } } } @case ('align') {
+  <p class="pop-title">
+    {{ selected().length > 1 && !store.selectionIsGroup() ? 'Align elements' : 'Align to page' }}
+  </p>
+  <div class="align-grid">
+    @for (entry of alignModes; track entry.mode) {
+    <button
+      type="button"
+      class="tb-btn"
+      [attr.data-testid]="'align-' + entry.mode"
+      (click)="store.align(entry.mode)"
+    >
+      <app-tb-icon [name]="entry.icon" /> {{ entry.label }}
+    </button>
+    }
+  </div>
+  } @case ('position') {
+  <p class="pop-title">Arrange</p>
+  <div class="align-grid two">
+    <button
+      type="button"
+      class="tb-btn"
+      data-testid="arrange-forward"
+      (click)="store.arrange('forward')"
+    >
+      Forward
+    </button>
+    <button
+      type="button"
+      class="tb-btn"
+      data-testid="arrange-backward"
+      (click)="store.arrange('backward')"
+    >
+      Backward
+    </button>
+    <button
+      type="button"
+      class="tb-btn"
+      data-testid="arrange-front"
+      (click)="store.arrange('front')"
+    >
+      To front
+    </button>
+    <button type="button" class="tb-btn" data-testid="arrange-back" (click)="store.arrange('back')">
+      To back
+    </button>
+  </div>
+  <p class="pop-title">Align to page</p>
+  <div class="align-grid">
+    @for (entry of alignModes; track entry.mode) {
+    <button
+      type="button"
+      class="tb-icon"
+      [title]="entry.label"
+      [attr.aria-label]="'Align ' + entry.label"
+      [attr.data-testid]="'page-align-' + entry.mode"
+      (click)="store.align(entry.mode)"
+    >
+      <app-tb-icon [name]="entry.icon" />
+    </button>
+    }
+  </div>
+  @if (single(); as el) {
+  <p class="pop-title">Size & position</p>
+  <div class="frame-grid">
+    <label
+      >X <input type="number" data-testid="frame-x" [value]="el.x" (change)="setFrame('x', $event)"
+    /></label>
+    <label
+      >Y <input type="number" data-testid="frame-y" [value]="el.y" (change)="setFrame('y', $event)"
+    /></label>
+    <label
+      >W
+      <input
+        type="number"
+        data-testid="frame-width"
+        [value]="el.width"
+        (change)="setFrame('width', $event)"
+    /></label>
+    <label
+      >H
+      <input
+        type="number"
+        data-testid="frame-height"
+        [value]="el.height"
+        [disabled]="el.type === 'text' || el.type === 'table' || el.type === 'totals'"
+        (change)="setFrame('height', $event)"
+      />
+    </label>
+    <label
+      >°
+      <input
+        type="number"
+        data-testid="frame-rotation"
+        [value]="el.rotation"
+        (change)="setFrame('rotation', $event)"
+      />
+    </label>
+  </div>
+  } } }
+</div>
+}

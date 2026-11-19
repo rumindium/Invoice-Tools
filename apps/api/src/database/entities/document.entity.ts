@@ -224,8 +224,43 @@ export class Document {
   @Column({ name: 'pdf_asset_id', type: 'text', nullable: true })
   pdfAssetId!: string | null;
 
+  @Column({ name: 'signature_name', type: 'text', nullable: true })
+  signatureName!: string | null;
+
+  @Column({ name: 'signature_title', type: 'text', nullable: true })
+  signatureTitle!: string | null;
+
+  /** PNG/JPEG data URL of a drawn or uploaded signature. */
+  @Column({ name: 'signature_image', type: 'text', nullable: true })
+  signatureImage!: string | null;
+
+  /** Goods receipts: delivery note, carrier, location, sign-off names, source quotation. */
+  @Column({ name: 'receipt_details', type: 'jsonb', nullable: true })
+  receiptDetails!: Record<string, unknown> | null;
+
+  /** Payment termins: the plan this document is one termin of, which one, and its share. */
+  @Column({ name: 'termin_plan_id', type: 'text', nullable: true })
+  terminPlanId!: string | null;
+
+  @Column({ name: 'termin_sequence', type: 'int', nullable: true })
+  terminSequence!: number | null;
+
+  @Column({
+    name: 'termin_percentage',
+    type: 'numeric',
+    precision: 7,
+    scale: 4,
+    nullable: true,
+    transformer: decimalTransformer,
+  })
+  terminPercentage!: Decimal | null;
+
   @Column({ type: 'int', default: 1 })
   version!: number;
+
+  /** User-facing version: 1 for the original, +1 for every revision (see document_revisions). */
+  @Column({ type: 'int', default: 1 })
+  revision!: number;
 
   @Column({ name: 'issued_at', type: 'timestamptz', precision: 6, nullable: true })
   issuedAt!: Date | null;
@@ -282,6 +317,30 @@ export class DocumentItem {
 
   @Column({ type: 'text', default: 'unit' })
   unit!: string;
+
+  /** Goods receipts: quantity on the source quotation (`quantity` is the received one). */
+  @Column({
+    name: 'ordered_quantity',
+    type: 'numeric',
+    precision: 18,
+    scale: 4,
+    nullable: true,
+    transformer: decimalTransformer,
+  })
+  orderedQuantity!: Decimal | null;
+
+  @Column({
+    name: 'rejected_quantity',
+    type: 'numeric',
+    precision: 18,
+    scale: 4,
+    nullable: true,
+    transformer: decimalTransformer,
+  })
+  rejectedQuantity!: Decimal | null;
+
+  @Column({ type: 'text', nullable: true })
+  remarks!: string | null;
 
   @Column({
     name: 'unit_price',

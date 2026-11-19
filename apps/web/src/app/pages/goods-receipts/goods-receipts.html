@@ -1,0 +1,234 @@
+<section class="ui-page">
+  <header class="ui-page-head">
+    <div>
+      <p class="ui-eyebrow">Goods receipt</p>
+      <h1>My goods receipts</h1>
+      <p class="ui-sub">
+        Goods received against accepted quotations, with counted, rejected and accepted quantities
+        and a GRN ready to download.
+      </p>
+    </div>
+    <div class="ui-actions">
+      <a class="ui-btn ui-btn-primary" routerLink="/goods-receipts/new">
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.9"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        New goods receipt
+      </a>
+    </div>
+  </header>
+
+  @if (summary()?.awaitingReceipt; as waiting) {
+  <div class="ui-alert" role="status" data-testid="awaiting-receipt">
+    <span>
+      <strong>{{ waiting }} accepted quotation{{ waiting === 1 ? '' : 's' }}</strong> waiting for a
+      goods receipt.
+    </span>
+    <a class="ui-link" routerLink="/goods-receipts/new">Create goods receipt</a>
+  </div>
+  } @if (actionError()) {
+  <div class="ui-alert" role="alert">
+    <span>{{ actionError() }}</span>
+    <button class="ui-link" type="button" (click)="actionError.set('')">Close</button>
+  </div>
+  }
+
+  <section class="ui-card documents-card" aria-labelledby="documents-heading">
+    <div class="documents-toolbar">
+      <span class="toolbar-title">Goods receipt list</span>
+
+      <div class="toolbar-controls">
+        <label class="status-filter">
+          <span class="sr-only">Filter by status</span>
+          <select class="ui-select" [value]="status()" (change)="updateStatus($event)">
+            @for (filter of filters; track filter.value) {
+            <option [value]="filter.value">{{ filter.label }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="search-box">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="6.5" />
+            <path d="m16 16 4 4" />
+          </svg>
+          <input
+            type="search"
+            placeholder="Search by GR, quotation or recipient…"
+            [value]="search()"
+            (input)="updateSearch($event)"
+            aria-label="Search goods receipts"
+          />
+          @if (search()) {
+          <button
+            class="search-clear"
+            type="button"
+            aria-label="Clear search"
+            (click)="clearSearch()"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="m6 6 12 12M18 6 6 18" />
+            </svg>
+          </button>
+          }
+        </label>
+      </div>
+    </div>
+
+    <div class="documents-meta">
+      <span id="documents-heading">
+        {{ rows().length }} goods receipt{{ rows().length === 1 ? '' : 's' }} @if (search()) { for
+        “{{ search() }}” }
+      </span>
+      <span class="documents-hint">Saved in this workspace</span>
+    </div>
+
+    @if (loadError()) {
+    <div class="ui-empty">
+      <strong>Goods receipts could not be loaded</strong>
+      <p>Check that the API is running, then reload this page.</p>
+    </div>
+    } @else if (loading() && rows().length === 0) {
+    <div class="ui-empty"><strong>Loading goods receipts…</strong></div>
+    } @else if (rows().length === 0) {
+    <div class="ui-empty">
+      <strong>No goods receipts yet</strong>
+      <p>When a quotation is accepted, create its goods receipt from the quotation or from here.</p>
+      <a class="ui-btn ui-btn-primary" routerLink="/goods-receipts/new">New goods receipt</a>
+    </div>
+    } @else {
+    <div class="ui-table-wrap">
+      <table class="ui-table documents-table">
+        <thead>
+          <tr>
+            <th>Goods receipt</th>
+            <th>Quotation</th>
+            <th>Recipient</th>
+            <th>Receipt date</th>
+            <th>Accepted qty</th>
+            <th>Status</th>
+            <th><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (doc of rows(); track doc.id) {
+          <tr data-testid="goods-receipt-row">
+            <td>
+              <a class="doc-cell" [routerLink]="['/goods-receipts', doc.id]">
+                <span class="kind-mark" aria-hidden="true">GR</span>
+                <span>
+                  <strong>{{ doc.number ?? 'Draft' }}</strong>
+                  <span class="ui-muted"
+                    >{{ doc.lineCount }} line{{ doc.lineCount === 1 ? '' : 's' }}@if (doc.termin) {
+                    ·
+                    <span class="termin-tag" data-testid="row-termin"
+                      >Termin {{ terminShortLabel(doc.termin) }}</span
+                    >
+                    }</span
+                  >
+                </span>
+              </a>
+            </td>
+            <td>
+              <a class="ui-link" [routerLink]="['/quotations', doc.quotationId]"
+                >{{ doc.quotationNumber }}</a
+              >
+            </td>
+            <td>{{ doc.recipientName }}</td>
+            <td class="date-cell">{{ formatDate(doc.receiptDate) }}</td>
+            <td class="ui-money">{{ formatQuantity(doc.acceptedQuantity) }}</td>
+            <td>
+              <span [class]="statusClass(doc.status)">{{ statusLabel[doc.status] }}</span>
+            </td>
+            <td class="row-action">
+              <button
+                class="row-link"
+                type="button"
+                title="Download PDF"
+                [attr.aria-label]="'Download PDF for ' + (doc.number ?? 'goods receipt')"
+                (click)="download(doc)"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 4v11M8 11l4 4 4-4" />
+                  <path d="M5 19h14" />
+                </svg>
+              </button>
+              <a
+                class="row-link"
+                [routerLink]="['/goods-receipts', doc.id]"
+                [attr.aria-label]="'Open ' + (doc.number ?? 'goods receipt')"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="m9 6 6 6-6 6" />
+                </svg>
+              </a>
+              @if (canDelete(doc)) {
+              <button
+                class="row-link row-link-danger"
+                type="button"
+                title="Delete goods receipt"
+                [attr.aria-label]="'Delete ' + (doc.number ?? 'goods receipt')"
+                (click)="remove(doc)"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"
+                  />
+                </svg>
+              </button>
+              }
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+  </section>
+</section>

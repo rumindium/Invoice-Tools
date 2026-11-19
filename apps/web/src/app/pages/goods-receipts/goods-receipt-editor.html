@@ -1,0 +1,300 @@
+<section class="ui-page">
+  <header class="ui-page-head generator-head">
+    <div>
+      <a
+        class="back-link"
+        [routerLink]="receipt() ? ['/goods-receipts', receipt()!.id] : '/goods-receipts'"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M20 12H4M10 6l-6 6 6 6" />
+        </svg>
+        Back to goods receipt
+      </a>
+      <p class="ui-eyebrow">Goods receipt</p>
+      <h1>{{ revising() ? 'Revise goods receipt' : 'Edit goods receipt' }}</h1>
+      <p class="ui-sub">
+        Count what arrived, note anything rejected, and record who delivered, checked and received
+        the goods.
+      </p>
+    </div>
+    <span class="document-pill">{{ receipt()?.number ?? 'Goods receipt' }}</span>
+  </header>
+
+  @if (saveError()) {
+  <div class="ui-alert" role="alert">
+    <span>{{ saveError() }}</span>
+    <button class="ui-link" type="button" (click)="saveError.set('')">Close</button>
+  </div>
+  } @if (loading()) {
+  <div class="ui-card ui-empty"><strong>Loading goods receipt…</strong></div>
+  } @else if (receipt(); as gr) {
+  <form class="generator-grid" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <div class="form-stack">
+      @if (revising()) {
+      <section class="ui-card form-card revision-card" data-testid="revision-reason-card">
+        <header class="form-card-head">
+          <div>
+            <h2>Reason for this revision</h2>
+            <p>
+              Version {{ gr.revision }} stays under Older versions; saving creates version {{
+              gr.revision + 1 }}.
+            </p>
+          </div>
+          <span class="step-mark" aria-hidden="true">v{{ gr.revision + 1 }}</span>
+        </header>
+        <div class="form-body">
+          <label class="ui-field">
+            <span>What was wrong?</span>
+            <textarea
+              class="ui-textarea"
+              rows="2"
+              formControlName="revisionReason"
+              placeholder="One damaged unit was missed in the count"
+            ></textarea>
+          </label>
+        </div>
+      </section>
+      }
+      <section class="ui-card form-card">
+        <header class="form-card-head">
+          <div>
+            <h2>Receipt details</h2>
+            <p>When and how the goods arrived.</p>
+          </div>
+          <span class="step-mark" aria-hidden="true">01</span>
+        </header>
+        <div class="form-body form-grid form-grid-2">
+          <label class="ui-field">
+            <span>GRN number</span>
+            <input class="ui-input" [value]="gr.number" readonly />
+          </label>
+          <label class="ui-field">
+            <span>Receipt date</span>
+            <input class="ui-input" type="date" formControlName="receiptDate" />
+          </label>
+          <label class="ui-field">
+            <span>Delivery note No.</span>
+            <input
+              class="ui-input"
+              formControlName="deliveryNoteNumber"
+              placeholder="DO-2026-0042"
+            />
+          </label>
+          <label class="ui-field">
+            <span>Carrier</span>
+            <input class="ui-input" formControlName="carrier" placeholder="Courier or own fleet" />
+          </label>
+          <label class="ui-field">
+            <span>Vehicle No.</span>
+            <input class="ui-input" formControlName="vehicleNumber" placeholder="B 1234 XYZ" />
+          </label>
+          <label class="ui-field">
+            <span>Receiving location</span>
+            <input
+              class="ui-input"
+              formControlName="receivingLocation"
+              placeholder="Warehouse or site address"
+            />
+          </label>
+        </div>
+      </section>
+
+      <section class="ui-card form-card items-card">
+        <header class="form-card-head">
+          <div>
+            <h2>Goods</h2>
+            <p>Lines come from {{ gr.source.quotationNumber }}. Rejected ≤ received ≤ ordered.</p>
+          </div>
+          <button class="ui-link" type="button" (click)="receiveAll()">Receive all</button>
+        </header>
+
+        <div class="items-body">
+          <div class="items-head gr-lines" aria-hidden="true">
+            <span>#</span>
+            <span>Item</span>
+            <span>Ordered</span>
+            <span>Received</span>
+            <span>Rejected</span>
+            <span>Accepted</span>
+            <span>Remarks</span>
+          </div>
+
+          <div formArrayName="lines" class="items-list">
+            @for (line of lines.controls; track line; let i = $index) {
+            <div class="item-row gr-lines" [formGroupName]="i" data-testid="goods-receipt-line">
+              <span class="gr-index">{{ i + 1 }}</span>
+              <div class="gr-item">
+                <strong>{{ gr.lines[i]?.name }}</strong>
+                <span
+                  >{{ gr.lines[i]?.unit }}{{ gr.lines[i]?.description ? ' · ' +
+                  gr.lines[i]?.description : '' }}</span
+                >
+              </div>
+              <span class="gr-qty">{{ formatQuantity(ordered(i)) }}</span>
+              <label class="ui-field">
+                <span class="mobile-label">Received</span>
+                <input
+                  class="ui-input"
+                  type="number"
+                  min="0"
+                  step="any"
+                  formControlName="receivedQuantity"
+                  [class.is-invalid]="lineError(i)"
+                  [attr.aria-label]="'Line ' + (i + 1) + ' received quantity'"
+                />
+              </label>
+              <label class="ui-field">
+                <span class="mobile-label">Rejected</span>
+                <input
+                  class="ui-input"
+                  type="number"
+                  min="0"
+                  step="any"
+                  formControlName="rejectedQuantity"
+                  [class.is-invalid]="lineError(i)"
+                  [attr.aria-label]="'Line ' + (i + 1) + ' rejected quantity'"
+                />
+              </label>
+              <span class="gr-qty gr-accepted" [attr.data-testid]="'line-accepted-' + (i + 1)"
+                >{{ formatQuantity(accepted(i)) }}</span
+              >
+              <label class="ui-field">
+                <span class="mobile-label">Remarks</span>
+                <input
+                  class="ui-input"
+                  formControlName="remarks"
+                  placeholder="Condition, reason"
+                  [attr.aria-label]="'Line ' + (i + 1) + ' remarks'"
+                />
+              </label>
+              @if (lineError(i); as message) {
+              <small class="ui-field-error gr-line-error">{{ message }}</small>
+              }
+            </div>
+            }
+          </div>
+        </div>
+      </section>
+
+      <section class="ui-card form-card">
+        <header class="form-card-head">
+          <div>
+            <h2>Sign-off</h2>
+            <p>Printed under the three signature boxes of the goods receipt note.</p>
+          </div>
+          <span class="step-mark" aria-hidden="true">03</span>
+        </header>
+        <div class="form-body form-grid form-grid-2">
+          <label class="ui-field">
+            <span>Delivered by</span>
+            <input
+              class="ui-input"
+              formControlName="deliveredByName"
+              placeholder="Driver or sales"
+            />
+          </label>
+          <label class="ui-field">
+            <span>Checked by</span>
+            <input class="ui-input" formControlName="checkedByName" placeholder="QC or warehouse" />
+          </label>
+          <label class="ui-field">
+            <span>Received by</span>
+            <input
+              class="ui-input"
+              formControlName="receivedByName"
+              placeholder="Customer representative"
+            />
+          </label>
+          <label class="ui-field">
+            <span>Received by title</span>
+            <input
+              class="ui-input"
+              formControlName="receivedByTitle"
+              placeholder="Warehouse lead"
+            />
+          </label>
+        </div>
+      </section>
+
+      <section class="ui-card form-card">
+        <header class="form-card-head">
+          <div>
+            <h2>Notes</h2>
+            <p>Packaging, delivery conditions or anything else worth recording.</p>
+          </div>
+          <span class="step-mark" aria-hidden="true">04</span>
+        </header>
+        <div class="form-body">
+          <label class="ui-field">
+            <span>Receipt notes</span>
+            <textarea class="ui-textarea" formControlName="notes" rows="3"></textarea>
+          </label>
+        </div>
+      </section>
+    </div>
+
+    <aside class="summary-column">
+      <section class="ui-card summary">
+        <header class="summary-head">
+          <h2>Summary</h2>
+          <span class="summary-type">Goods receipt</span>
+        </header>
+        <div class="summary-body">
+          <div class="summary-row">
+            <span>Quotation</span>
+            <a class="ui-link" [routerLink]="['/quotations', gr.source.quotationId]"
+              >{{ gr.source.quotationNumber }}</a
+            >
+          </div>
+          <div class="summary-row">
+            <span>Recipient</span><strong>{{ gr.recipient.name }}</strong>
+          </div>
+          <div class="summary-row">
+            <span>Ordered</span><strong>{{ formatQuantity(totals().ordered) }}</strong>
+          </div>
+          <div class="summary-row">
+            <span>Received</span><strong>{{ formatQuantity(totals().received) }}</strong>
+          </div>
+          <div class="summary-row">
+            <span>Rejected</span><strong>{{ formatQuantity(totals().rejected) }}</strong>
+          </div>
+          <div class="summary-row summary-total">
+            <span>Accepted</span>
+            <strong data-testid="goods-receipt-accepted-total"
+              >{{ formatQuantity(totals().accepted) }}</strong
+            >
+          </div>
+          <p class="summary-hint">
+            Save the counts while the receipt is a draft, then post it as received from its page.
+          </p>
+          <button
+            class="ui-btn ui-btn-primary summary-submit"
+            type="submit"
+            [disabled]="saving() || !canSave()"
+          >
+            {{ submitLabel() }}
+          </button>
+          <a class="ui-btn ui-btn-ghost summary-cancel" [routerLink]="['/goods-receipts', gr.id]">
+            Cancel
+          </a>
+        </div>
+      </section>
+
+      <app-template-summary
+        [template]="gr.template"
+        changeLink="/templates/goods-receipts"
+        followText="Applied automatically to this goods receipt and its PDF"
+        lockedText="Kept from when this goods receipt was posted"
+        testId="goods-receipt-editor-template"
+      />
+    </aside>
+  </form>
+  }
+</section>

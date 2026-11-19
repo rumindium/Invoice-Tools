@@ -1,0 +1,532 @@
+/* Welcome banner: overlay, dialog, slide track and transitions. Form styles: welcome-form.scss. */
+
+:host {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-slide: cubic-bezier(0.77, 0, 0.175, 1);
+  --ink: #0f172a;
+  --muted: #475569;
+  --faint: #94a3b8;
+}
+
+.welcome-overlay {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(99, 102, 241, 0.35), transparent 45%),
+    radial-gradient(circle at 85% 90%, rgba(236, 72, 153, 0.25), transparent 40%),
+    rgba(15, 23, 42, 0.62);
+  backdrop-filter: blur(8px);
+  animation: overlay-in 420ms ease-out both;
+  transition: opacity 340ms ease;
+}
+
+.welcome-dialog {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: min(1060px, 100%);
+  height: min(680px, calc(100dvh - 32px));
+  overflow: hidden;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow:
+    0 40px 90px -30px rgba(15, 23, 42, 0.6),
+    0 0 0 1px rgba(255, 255, 255, 0.4);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  animation: dialog-in 700ms var(--ease-out) both;
+  transition:
+    transform 340ms ease,
+    opacity 340ms ease;
+}
+
+.welcome-overlay.is-leaving {
+  opacity: 0;
+}
+
+.welcome-overlay.is-leaving .welcome-dialog {
+  transform: translateY(12px) scale(0.97);
+}
+
+/* ------------------------------------------------------------ Top bar */
+
+.welcome-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid #eef2f7;
+  padding: 14px 26px;
+}
+
+.welcome-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.welcome-brand strong {
+  color: var(--ink);
+}
+
+.welcome-brand-mark {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  color: #fff;
+}
+
+.welcome-brand-mark svg {
+  width: 100%;
+  height: 100%;
+  padding: 3px;
+}
+
+.welcome-step {
+  margin-left: auto;
+  color: var(--faint);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.welcome-signout {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.welcome-signout:hover {
+  color: var(--ink);
+}
+
+/* ------------------------------------------------------------ Slides */
+
+.welcome-viewport {
+  overflow: hidden;
+}
+
+.welcome-track {
+  display: flex;
+  height: 100%;
+  transition: transform 760ms var(--ease-slide);
+  will-change: transform;
+}
+
+.slide {
+  display: grid;
+  flex: 0 0 100%;
+  grid-template-columns: minmax(0, 44%) minmax(0, 1fr);
+  min-width: 0;
+  height: 100%;
+  opacity: 0.25;
+  transition: opacity 760ms var(--ease-slide);
+}
+
+.slide.is-active {
+  opacity: 1;
+}
+
+.slide-art {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  place-items: center;
+  background: linear-gradient(150deg, var(--art-a), var(--art-b));
+  padding: 28px;
+}
+
+.slide-art app-welcome-art {
+  position: relative;
+  z-index: 1;
+  opacity: 0.4;
+  transform: scale(0.88) translateY(14px);
+  transition:
+    transform 900ms var(--ease-out) 150ms,
+    opacity 700ms ease 150ms;
+}
+
+.slide.is-active .slide-art app-welcome-art {
+  opacity: 1;
+  transform: none;
+}
+
+.art-orb {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  filter: blur(2px);
+}
+
+.orb-1 {
+  top: -60px;
+  right: -40px;
+  width: 220px;
+  height: 220px;
+}
+
+.orb-2 {
+  bottom: -80px;
+  left: -60px;
+  width: 260px;
+  height: 260px;
+  background: rgba(15, 23, 42, 0.12);
+}
+
+.slide.is-active .orb-1 {
+  animation: drift 9s ease-in-out infinite;
+}
+
+.slide.is-active .orb-2 {
+  animation: drift 11s ease-in-out infinite reverse;
+}
+
+.slide-body {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 36px 48px;
+}
+
+/* Centres short content; tall content (the form on small screens) starts at the top and scrolls. */
+.slide-body::before,
+.slide-body::after {
+  flex: 1 1 0;
+  content: '';
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  color: var(--art-a);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.slide-body h2 {
+  margin: 0 0 14px;
+  font-family: var(--font-sans);
+  font-size: clamp(24px, 3vw, 33px);
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  outline: none;
+  --delay: 70ms;
+}
+
+.lead {
+  margin: 0 0 22px;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.6;
+  --delay: 140ms;
+}
+
+.points {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.points li {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.points li > span:last-child {
+  display: grid;
+  gap: 2px;
+  font-size: 13.5px;
+}
+
+.points strong {
+  font-size: 14.5px;
+}
+
+.points li > span:last-child > span {
+  color: var(--muted);
+}
+
+.point-mark {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  place-items: center;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--art-a) 12%, #fff);
+  color: var(--art-a);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.point-mark svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+}
+
+/* Content rises in after the slide arrives; each block waits for its --delay. */
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 500ms ease,
+    transform 650ms var(--ease-out);
+}
+
+.slide.is-active .reveal {
+  opacity: 1;
+  transform: none;
+  transition-delay: calc(var(--delay, 0ms) + 280ms);
+}
+
+/* ------------------------------------------------------------ Success */
+
+.success {
+  display: grid;
+  justify-items: start;
+}
+
+.success-mark {
+  width: 76px;
+  height: 76px;
+  margin-bottom: 18px;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.success-mark circle {
+  stroke: #22c55e;
+  stroke-width: 5;
+  stroke-dasharray: 214;
+  stroke-dashoffset: 214;
+  animation: draw 700ms var(--ease-out) 100ms forwards;
+}
+
+.success-mark path {
+  stroke: #22c55e;
+  stroke-width: 6;
+  stroke-dasharray: 50;
+  stroke-dashoffset: 50;
+  animation: draw 450ms var(--ease-out) 650ms forwards;
+}
+
+/* ------------------------------------------------------------ Footer */
+
+.welcome-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid #eef2f7;
+  padding: 14px 26px;
+}
+
+.dots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border: 0;
+  border-radius: 99px;
+  background: #cbd5e1;
+  cursor: pointer;
+  padding: 0;
+  transition:
+    width 450ms var(--ease-out),
+    background 450ms ease;
+}
+
+.dot.is-done {
+  background: #94a3b8;
+}
+
+.dot.is-active {
+  width: 32px;
+  background: var(--step-accent, #4f46e5);
+}
+
+.dot:disabled {
+  cursor: default;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 12px 20px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  transition:
+    background 450ms ease,
+    transform 150ms ease,
+    box-shadow 300ms ease;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+}
+
+.btn-primary {
+  background: var(--step-accent, #4f46e5);
+  box-shadow: 0 10px 22px -12px var(--step-accent, #4f46e5);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  box-shadow: 0 14px 26px -12px var(--step-accent, #4f46e5);
+}
+
+.btn-primary:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.btn-ghost {
+  border-color: #e2e8f0;
+  background: #fff;
+  color: var(--ink);
+}
+
+.btn-ghost:hover {
+  background: #f8fafc;
+}
+
+/* ------------------------------------------------------------ Keyframes */
+
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.96);
+  }
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(-18px, 14px);
+  }
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ------------------------------------------------------------ Small screens */
+
+@media (max-width: 760px) {
+  .welcome-overlay {
+    padding: 0;
+  }
+
+  .welcome-dialog {
+    width: 100%;
+    height: 100dvh;
+    border-radius: 0;
+  }
+
+  .welcome-top,
+  .welcome-footer {
+    padding: 12px 16px;
+  }
+
+  .welcome-step {
+    display: none;
+  }
+
+  .welcome-signout {
+    margin-left: auto;
+  }
+
+  .slide {
+    grid-template-columns: 1fr;
+    grid-template-rows: 190px minmax(0, 1fr);
+  }
+
+  .slide-art {
+    padding: 12px;
+  }
+
+  .slide-art app-welcome-art {
+    max-width: 210px;
+  }
+
+  .slide-body {
+    padding: 22px 20px;
+  }
+
+  .btn {
+    padding: 11px 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome-overlay,
+  .welcome-dialog,
+  .welcome-track,
+  .slide,
+  .slide-art app-welcome-art,
+  .reveal,
+  .dot,
+  .btn {
+    animation: none !important;
+    transition: none !important;
+  }
+}

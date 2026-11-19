@@ -1,0 +1,669 @@
+/* The five goods receipt layouts; shared structure lives in goods-receipt-sheet.scss. */
+
+/* ============================================================ Classic */
+
+.layout-classic {
+  .classic-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    border-bottom: 1.4px solid var(--t-accent);
+    padding-bottom: 12px;
+  }
+
+  .doc-title {
+    color: var(--t-accent-text);
+    font-size: 18px;
+    line-height: 1.1;
+  }
+
+  .doc-number {
+    color: var(--ink);
+    font-weight: 700;
+  }
+
+  .party {
+    border: 1px solid var(--grid);
+    padding: 0 9px 9px;
+  }
+
+  .party-label {
+    margin: 0 -9px 6px;
+    background: var(--soft-grey);
+    padding: 4px 9px;
+    color: var(--ink-muted);
+  }
+
+  .refs {
+    border-top: 1px solid var(--grid);
+    border-left: 1px solid var(--grid);
+  }
+
+  .ref {
+    border-right: 1px solid var(--grid);
+    border-bottom: 1px solid var(--grid);
+  }
+
+  .lines th,
+  .lines td {
+    border: 1px solid var(--grid);
+  }
+
+  .lines th {
+    background: var(--soft-grey);
+  }
+
+  .signoff-item {
+    border: 1px solid var(--grid);
+  }
+
+  .signoff-label {
+    border-bottom: 1px solid var(--grid);
+    background: var(--soft-grey);
+  }
+}
+
+/* ============================================================ Modern */
+
+.layout-modern {
+  padding: 0;
+
+  .modern-band {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    background:
+      linear-gradient(
+        100deg,
+        transparent 0 60%,
+        color-mix(in srgb, var(--t-accent-deep) 35%, var(--t-accent)) 60% 100%
+      ),
+      var(--t-accent);
+    padding: 30px 7% 22px;
+    color: var(--t-on-accent);
+  }
+
+  .modern-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding: 0 7% 4.5%;
+  }
+
+  .logo-tile {
+    display: grid;
+    flex: none;
+    place-items: center;
+    border-radius: 10px;
+    background: #fff;
+    padding: 6px;
+  }
+
+  .issuer-text span,
+  .doc-number {
+    color: var(--t-on-accent);
+    opacity: 0.85;
+  }
+
+  .doc-title {
+    font-size: 20px;
+    line-height: 1.1;
+  }
+
+  .status-pill {
+    margin-top: 6px;
+    border: 1px solid var(--t-on-accent);
+    border-radius: 99px;
+    padding: 1px 9px;
+    font-size: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .party {
+    border-radius: 8px;
+    box-shadow: inset 3px 0 0 var(--t-accent);
+    background: var(--t-tint);
+    padding: 10px 12px 10px 14px;
+  }
+
+  .party-label,
+  .ref dt {
+    color: var(--t-accent-text);
+  }
+
+  .refs {
+    gap: 8px;
+  }
+
+  .ref {
+    border-radius: 6px;
+    background: var(--t-tint);
+    padding: 6px 9px;
+  }
+
+  .lines thead tr {
+    background: var(--t-accent);
+  }
+
+  .lines th {
+    color: var(--t-on-accent);
+  }
+
+  .lines th:first-child {
+    border-radius: 5px 0 0 5px;
+  }
+
+  .lines th:last-child {
+    border-radius: 0 5px 5px 0;
+  }
+
+  .lines tbody tr:nth-child(even) {
+    background: var(--t-tint);
+  }
+
+  .lines td.col-no,
+  .lines .accepted,
+  .lines tfoot td:nth-child(2) {
+    color: var(--t-accent-text);
+  }
+
+  .lines tfoot tr {
+    background: var(--t-soft);
+  }
+
+  .section-label {
+    color: var(--t-accent-text);
+  }
+
+  .section-marker {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 5px;
+    border-radius: 2px;
+    background: var(--t-accent);
+  }
+
+  .signoff-item {
+    border-radius: 8px;
+    box-shadow: inset 0 4px 0 var(--t-accent);
+    background: var(--t-tint);
+  }
+
+  .signoff-label {
+    padding-top: 9px;
+    color: var(--t-accent-text);
+  }
+
+  .modern-strip {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 8px;
+    background: var(--t-accent);
+  }
+}
+
+/* ============================================================ Minimal */
+
+.layout-minimal {
+  padding-right: 9.4%;
+  padding-left: 9.4%;
+
+  .minimal-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    border-bottom: 0.5px solid var(--rule);
+    padding-bottom: 16px;
+  }
+
+  .logo {
+    width: 28px;
+    height: 28px;
+  }
+
+  .company-name {
+    font-size: 11.5px;
+  }
+
+  .doc-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 21px;
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  .title-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--t-accent);
+  }
+
+  .party-label,
+  .ref dt,
+  .signoff-label,
+  .section-label {
+    font-weight: 400;
+    letter-spacing: 0.12em;
+  }
+
+  .ref {
+    padding: 4px 8px 4px 0;
+  }
+
+  .ref dd {
+    font-weight: 400;
+  }
+
+  .lines {
+    border-top: 1.5px solid var(--t-accent);
+  }
+
+  .lines th {
+    border-bottom: 0.5px solid var(--rule);
+    color: var(--ink-faint);
+    font-weight: 400;
+  }
+
+  .lines tbody tr {
+    border-bottom: 0.5px solid var(--rule);
+  }
+
+  .lines td.col-no {
+    color: var(--ink-faint);
+  }
+
+  .lines tfoot tr {
+    border-top: 1.2px solid var(--t-accent);
+  }
+
+  .lines tfoot td:nth-child(2) {
+    color: var(--ink-muted);
+  }
+
+  .section-marker {
+    display: inline-block;
+    width: 11px;
+    height: 1.5px;
+    margin-right: 6px;
+    background: var(--t-accent);
+  }
+
+  .signoff-item {
+    min-height: 90px;
+  }
+
+  .signoff-item strong {
+    border-top-color: var(--ink);
+  }
+}
+
+/* ============================================================ Elegant */
+
+.layout-elegant {
+  font-family: 'Times New Roman', Times, Georgia, serif;
+
+  &::before {
+    position: absolute;
+    inset: 2.4%;
+    border: 0.6px solid color-mix(in srgb, var(--t-accent) 50%, transparent);
+    content: '';
+    pointer-events: none;
+  }
+
+  .elegant-head {
+    display: grid;
+    justify-items: center;
+    gap: 3px;
+    text-align: center;
+  }
+
+  .logo {
+    width: 38px;
+    height: 38px;
+    margin-bottom: 4px;
+  }
+
+  .company-name {
+    font-size: 19px;
+  }
+
+  .company-details {
+    max-width: 85%;
+    color: var(--ink-muted);
+    font-size: 9.5px;
+  }
+
+  .double-rule {
+    width: 100%;
+    height: 5.5px;
+    margin: 9px 0 11px;
+    border-top: 1.6px solid var(--t-accent);
+    border-bottom: 0.5px solid var(--t-accent);
+  }
+
+  .doc-title {
+    color: var(--t-accent-text);
+    font-size: 14px;
+    letter-spacing: 0.28em;
+  }
+
+  .doc-number {
+    font-style: italic;
+  }
+
+  .party-label,
+  .section-label,
+  .signoff-label {
+    color: var(--t-accent-text);
+    font-size: 10px;
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .refs {
+    grid-template-columns: 1fr 1fr;
+    column-gap: 28px;
+    border-top: 0.6px solid var(--t-accent);
+    border-bottom: 0.6px solid var(--t-accent);
+    padding: 4px 0;
+  }
+
+  .ref {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 2px 0;
+  }
+
+  .ref-wide {
+    grid-column: auto;
+  }
+
+  .ref dt {
+    color: var(--ink-muted);
+    font-size: 9.5px;
+    font-style: italic;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .ref dd {
+    font-size: 9.5px;
+  }
+
+  .lines {
+    font-size: 10px;
+  }
+
+  .lines thead tr {
+    border-top: 0.9px solid var(--t-accent);
+    border-bottom: 0.5px solid var(--t-accent);
+  }
+
+  .lines th {
+    color: var(--t-accent-text);
+  }
+
+  .lines tbody tr + tr {
+    border-top: 0.5px solid var(--rule);
+  }
+
+  .lines tfoot tr {
+    border-top: 3.5px double var(--t-accent);
+  }
+
+  .lines .accepted,
+  .lines tfoot td:nth-child(2) {
+    color: var(--t-accent-text);
+  }
+
+  .signoff-item {
+    min-height: 92px;
+  }
+
+  .signoff-item strong {
+    border-top-color: var(--t-accent);
+  }
+
+  .signoff-caption {
+    font-style: italic;
+  }
+}
+
+/* ============================================================ Bold */
+
+.layout-bold {
+  flex-direction: row;
+  padding: 0;
+
+  .bold-side {
+    display: flex;
+    width: 28.2%;
+    flex: none;
+    flex-direction: column;
+    gap: 16px;
+    overflow: hidden;
+    background:
+      linear-gradient(
+        170deg,
+        transparent 0 78%,
+        color-mix(in srgb, var(--t-accent-deep) 45%, var(--t-accent)) 78% 100%
+      ),
+      var(--t-accent);
+    padding: 7% 4% 24px;
+    color: var(--t-on-accent);
+    overflow-wrap: anywhere;
+  }
+
+  .logo-tile {
+    display: grid;
+    width: fit-content;
+    place-items: center;
+    border-radius: 9px;
+    background: #fff;
+    padding: 6px;
+  }
+
+  .logo {
+    width: 38px;
+    height: 38px;
+  }
+
+  .side-group {
+    display: grid;
+    gap: 1px;
+  }
+
+  .side-refs {
+    display: grid;
+    gap: 12px;
+    margin: 0;
+  }
+
+  .side-refs dd {
+    margin: 0;
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  .side-refs a {
+    color: inherit;
+  }
+
+  .party-label {
+    color: var(--t-on-accent);
+    font-size: 7px;
+    letter-spacing: 0.1em;
+    opacity: 0.7;
+  }
+
+  .party-line {
+    color: var(--t-on-accent);
+    font-size: 8.5px;
+    opacity: 0.85;
+  }
+
+  .bold-main {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+    padding: 7% 6% 4.5% 4.5%;
+  }
+
+  .doc-title {
+    font-size: 30px;
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+
+  .title-bar {
+    width: 46px;
+    height: 5px;
+    margin: 9px 0 10px;
+    background: var(--t-accent);
+  }
+
+  .doc-status {
+    color: var(--t-accent-text);
+    font-size: 8.5px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .strip-refs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 12px;
+    margin: 16px 0 14px;
+    border-top: 2px solid var(--t-accent);
+    padding-top: 8px;
+  }
+
+  .strip-refs dt {
+    color: var(--t-accent-text);
+    font-size: 7.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .strip-refs dd {
+    overflow: hidden;
+    margin: 0;
+    font-size: 10px;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .lines {
+    font-size: 8.5px;
+  }
+
+  .lines th {
+    padding: 5px 4px;
+    border-bottom: 2px solid var(--t-accent);
+    color: var(--t-accent-text);
+    font-size: 7px;
+  }
+
+  .lines td {
+    padding: 5px 4px;
+  }
+
+  .lines tbody tr {
+    border-bottom: 0.6px solid var(--rule);
+  }
+
+  .lines td.col-no,
+  .lines .accepted {
+    color: var(--t-accent-text);
+  }
+
+  .lines tfoot tr {
+    border-top: 2px solid var(--t-accent);
+  }
+
+  .section-label {
+    color: var(--t-accent-text);
+  }
+
+  .signoff-item {
+    min-height: 104px;
+    border: 1px solid var(--t-accent);
+  }
+
+  .signoff-label {
+    background: var(--t-accent);
+    color: var(--t-on-accent);
+  }
+}
+
+/* Narrow screens: let the sheet grow instead of squeezing into A4 proportions. */
+@container (max-width: 520px) {
+  .sheet {
+    aspect-ratio: auto;
+    padding: 22px 18px;
+  }
+
+  .layout-modern {
+    padding: 0;
+  }
+
+  .layout-modern .modern-band {
+    padding: 22px 18px;
+  }
+
+  .layout-modern .modern-body {
+    padding: 0 18px 22px;
+  }
+
+  .layout-bold {
+    flex-direction: column;
+    padding: 0;
+  }
+
+  .layout-bold .bold-side {
+    width: auto;
+  }
+
+  .parties,
+  .signoff {
+    grid-template-columns: 1fr;
+  }
+
+  .modern-band,
+  .minimal-head,
+  .classic-head {
+    flex-direction: column;
+  }
+
+  .title-block {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .refs {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Eight columns do not fit a phone: the table scrolls sideways inside the sheet. */
+  .lines {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}

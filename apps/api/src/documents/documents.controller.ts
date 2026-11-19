@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Put,
@@ -19,13 +20,25 @@ import type { AuthenticatedRequest } from '../auth/session.guard';
 import { SessionGuard } from '../auth/session.guard';
 import { DocumentsService } from './documents.service';
 import { FollowUpInputDto, FollowUpStatusDto } from './dto/follow-up.dto';
-import { ChangeStatusDto, InvoicePayloadDto, ListDocumentsQueryDto } from './dto/invoice.dto';
+import {
+  ChangeStatusDto,
+  InvoiceFromGoodsReceiptDto,
+  InvoicePayloadDto,
+  InvoiceRevisionDto,
+  ListDocumentsQueryDto,
+} from './dto/invoice.dto';
+import { InvoiceConversionService } from './invoice-conversion.service';
+import { sendPdf } from './pdf/send-pdf';
+import type { RevisionSummary } from './revisions';
 import type { InvoiceFollowUpView, InvoiceListRow, InvoiceSummary, InvoiceView } from './views';
 
 @Controller('documents')
 @UseGuards(SessionGuard)
 export class DocumentsController {
-  constructor(private readonly documents: DocumentsService) {}
+  constructor(
+    private readonly documents: DocumentsService,
+    private readonly conversions: InvoiceConversionService,
+  ) {}
 
   @Get()
   async list(
@@ -47,6 +60,21 @@ export class DocumentsController {
   ): Promise<{ invoice: InvoiceView }> {
     const workspaceId = request.auth!.workspace.id;
     return { invoice: await this.documents.create(workspaceId, request.auth!.user.id, payload) };
+  }
+
+  /** Generates the invoice of a received goods receipt ({ goodsReceiptId }). */
+  @Post('from-goods-receipt')
+  async fromGoodsReceipt(
+    @Req() request: AuthenticatedRequest,
+    @Body() dto: InvoiceFromGoodsReceiptDto,
+  ): Promise<{ invoice: InvoiceView }> {
+    const workspaceId = request.auth!.workspace.id;
+    const invoiceId = await this.conversions.fromGoodsReceipt(
+      workspaceId,
+      request.auth!.user.id,
+      dto.goodsReceiptId,
+    );
+    return { invoice: await this.documents.get(workspaceId, invoiceId) };
   }
 
   @Get(':id')
@@ -71,6 +99,56 @@ export class DocumentsController {
         payload,
       ),
     };
+  }
+
+  /** Corrects an issued invoice as a new version ({ ...payload, reason }). */
+  @Post(':id/revisions')
+  async revise(
+    @Req() request: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() dto: InvoiceRevisionDto,
+  ): Promise<{ invoice: InvoiceView }> {
+    return {
+      invoice: await this.documents.revise(
+        request.auth!.workspace.id,
+        request.auth!.user.id,
+        id,
+        dto,
+      ),
+    };
+  }
+
+  @Get(':id/revisions')
+  async revisions(
+    @Req() request: AuthenticatedRequest,
+    @Param('id') id: string,
+  ): Promise<{ revision: number; revisions: RevisionSummary[] }> {
+    const invoice = await this.documents.get(request.auth!.workspace.id, id);
+    return { revision: invoice.revision, revisions: invoice.revisions };
+  }
+
+  @Get(':id/revisions/:revision')
+  async revision(
+    @Req() request: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Param('revision', ParseIntPipe) revision: number,
+  ): Promise<{ invoice: InvoiceView }> {
+    return { invoice: await this.documents.getRevision(request.auth!.workspace.id, id, revision) };
+  }
+
+  @Get(':id/revisions/:revision/pdf')
+  async revisionPdf(
+    @Req() request: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Param('revision', ParseIntPipe) revision: number,
+    @Res() response: Response,
+  ): Promise<void> {
+    const { buffer, filename } = await this.documents.revisionPdf(
+      request.auth!.workspace.id,
+      id,
+      revision,
+    );
+    sendPdf(response, buffer, filename);
   }
 
   @Post(':id/status')
@@ -159,11 +237,6 @@ export class DocumentsController {
     @Res() response: Response,
   ): Promise<void> {
     const { buffer, filename } = await this.documents.pdf(request.auth!.workspace.id, id);
-
-    response.setHeader('Content-Type', 'application/pdf');
-    response.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    response.setHeader('Content-Length', String(buffer.length));
-    response.setHeader('Cache-Control', 'no-store');
-    response.end(buffer);
+    sendPdf(response, buffer, filename);
   }
 }

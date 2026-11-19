@@ -10,10 +10,14 @@ import {
   Document,
   DocumentItem,
   DocumentNumberSequence,
+  DocumentRelation,
   InvoiceFollowUp,
 } from '../database/entities';
+import { TemplatesModule } from '../templates/templates.module';
 import { DocumentsController } from './documents.controller';
+import { DocumentFlowService } from './document-flow.service';
 import { DocumentsService } from './documents.service';
+import { InvoiceConversionService } from './invoice-conversion.service';
 
 @Module({
   imports: [
@@ -23,15 +27,17 @@ import { DocumentsService } from './documents.service';
       Customer,
       CustomerContact,
       DocumentNumberSequence,
+      DocumentRelation,
       InvoiceFollowUp,
       AuditEvent,
     ]),
     AuthModule,
     AuditModule,
     CompaniesModule,
+    TemplatesModule,
   ],
   controllers: [DocumentsController],
-  providers: [DocumentsService],
-  exports: [DocumentsService],
+  providers: [DocumentsService, DocumentFlowService, InvoiceConversionService],
+  exports: [DocumentsService, InvoiceConversionService],
 })
 export class DocumentsModule {}

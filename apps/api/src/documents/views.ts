@@ -7,6 +7,10 @@ import type {
   InvoiceFollowUp,
 } from '../database/entities';
 import { DocumentStatus } from '../database/entities/enums';
+import { type DocumentTemplateView, LEGACY_TEMPLATE } from '../templates/template-snapshot';
+import type { TerminPlanView, TerminRef } from '../termins/termin-views';
+import type { RevisionState, RevisionSummary, SupersededRevision } from './revisions';
+import { NO_REVISION_STATE } from './revisions';
 
 export interface InvoiceItemView {
   id: string;
@@ -26,7 +30,8 @@ export interface InvoiceItemView {
 }
 
 export interface InvoiceContactView {
-  id: string;
+  /** Null when the attention person was typed on the source quotation. */
+  id: string | null;
   name: string;
   jobTitle: string | null;
   phone: string | null;
@@ -50,6 +55,7 @@ export interface InvoiceCompanyView {
   taxId: string | null;
   logoDataUrl: string | null;
   footerText: string | null;
+  website?: string | null;
   signatoryName: string | null;
   signatoryTitle: string | null;
 }
@@ -60,6 +66,8 @@ export interface InvoiceHistoryEntry {
   fromStatus: string | null;
   toStatus: string | null;
   reason: string | null;
+  revision: number | null;
+  termin?: { sequence: number; count: number; percentage: number } | null;
   actorName: string | null;
   at: string;
 }
@@ -75,6 +83,38 @@ export interface InvoiceFollowUpView {
   createdByName: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface FlowDocumentSummary {
+  id: string;
+  number: string | null;
+  date: string;
+  status: string;
+}
+
+/** One event of the quotation → goods receipt → invoice chain, oldest first. */
+export interface FlowEvent {
+  id: string;
+  at: string;
+  documentType: 'QUOTATION' | 'GOODS_RECEIPT' | 'INVOICE';
+  documentId: string;
+  documentNumber: string | null;
+  action: string;
+  fromStatus: string | null;
+  toStatus: string | null;
+  reason: string | null;
+  revision: number | null;
+  /** Creation events of termin documents: which termin. */
+  termin: { sequence: number; count: number; percentage: number } | null;
+  actorName: string | null;
+}
+
+/** Where an invoice generated from a goods receipt came from, and everything that happened. */
+export interface InvoiceFlowView {
+  quotation: (FlowDocumentSummary & { expired: boolean; total: number; currency: string }) | null;
+  goodsReceipt: FlowDocumentSummary & { acceptedQuantity: number; lineCount: number };
+  invoice: FlowDocumentSummary & { total: number; currency: string };
+  events: FlowEvent[];
 }
 
 export interface InvoiceTotalsView {
@@ -106,9 +146,17 @@ export interface InvoiceView {
   company: InvoiceCompanyView;
   items: InvoiceItemView[];
   totals: InvoiceTotalsView;
+  /** Layout and colour the invoice is drawn with (drafts follow the active template). */
+  template: DocumentTemplateView;
   history: InvoiceHistoryEntry[];
   followUps: InvoiceFollowUpView[];
   nextStatuses: string[];
+  /** Quotation → goods receipt → invoice, for invoices generated from a goods receipt. */
+  flow: InvoiceFlowView | null;
+  /** The payment termin this invoice bills (its own, or its termin goods receipt's). */
+  termin: TerminRef | null;
+  /** The invoice termin plan this invoice belongs to. */
+  terminPlan: TerminPlanView | null;
   notes: string | null;
   terms: string | null;
   issuedAt: string | null;
@@ -116,6 +164,11 @@ export interface InvoiceView {
   voidReason: string | null;
   createdAt: string;
   updatedAt: string;
+  revision: number;
+  revisions: RevisionSummary[];
+  canRevise: boolean;
+  revisionBlockedBy: string | null;
+  supersededRevision?: SupersededRevision;
 }
 
 export interface InvoiceListRow {
@@ -129,6 +182,9 @@ export interface InvoiceListRow {
   customerName: string;
   total: number;
   balanceDue: number;
+  revision: number;
+  /** Termin invoices: "termin 2 of 3". */
+  termin: TerminRef | null;
   createdAt: string;
 }
 
@@ -222,6 +278,13 @@ export function toInvoiceView(
   history: InvoiceHistoryEntry[] = [],
   nextStatuses: string[] = [],
   followUps: InvoiceFollowUpView[] = [],
+  flow: InvoiceFlowView | null = null,
+  revisionState: RevisionState = NO_REVISION_STATE,
+  template: DocumentTemplateView = LEGACY_TEMPLATE,
+  termins: { termin: TerminRef | null; terminPlan: TerminPlanView | null } = {
+    termin: null,
+    terminPlan: null,
+  },
 ): InvoiceView {
   const customer = toInvoiceCustomerView(document);
 
@@ -248,6 +311,7 @@ export function toInvoiceView(
       taxId: company.taxId,
       logoDataUrl: company.logoDataUrl,
       footerText: company.footerText,
+      website: company.website,
       signatoryName: company.signatoryName,
       signatoryTitle: company.signatoryTitle,
     },
@@ -266,9 +330,12 @@ export function toInvoiceView(
       amountPaid: Number(document.amountPaid),
       balanceDue: Number(document.balanceDue),
     },
+    template,
     history,
     followUps,
     nextStatuses,
+    flow,
+    ...termins,
     notes: document.notes,
     terms: document.terms,
     issuedAt: document.issuedAt?.toISOString() ?? null,
@@ -276,10 +343,15 @@ export function toInvoiceView(
     voidReason: document.voidReason,
     createdAt: document.createdAt.toISOString(),
     updatedAt: document.updatedAt.toISOString(),
+    revision: document.revision,
+    ...revisionState,
   };
 }
 
-export function toInvoiceListRow(document: DocumentWithCustomer): InvoiceListRow {
+export function toInvoiceListRow(
+  document: DocumentWithCustomer,
+  termin: TerminRef | null = null,
+): InvoiceListRow {
   const customer = toInvoiceCustomerView(document);
 
   return {
@@ -293,6 +365,8 @@ export function toInvoiceListRow(document: DocumentWithCustomer): InvoiceListRow
     customerName: customer.name,
     total: Number(document.grandTotal),
     balanceDue: Number(document.balanceDue),
+    revision: document.revision,
+    termin,
     createdAt: document.createdAt.toISOString(),
   };
 }

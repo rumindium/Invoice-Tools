@@ -16,6 +16,13 @@
       </a>
       <p class="ui-eyebrow">Invoice</p>
       <h1>{{ invoice()?.number ?? 'Invoice' }}</h1>
+      @if (invoice(); as current) {
+      <span class="version-pill" data-testid="document-version"
+        >Version {{ current.revision }}</span
+      >
+      @if (current.termin; as termin) {
+      <span class="termin-pill" data-testid="document-termin">{{ terminLabel(termin) }}</span>
+      } }
       <p class="ui-sub">
         Follow this invoice from draft to paid, change its status, and download the PDF.
       </p>
@@ -33,6 +40,14 @@
       >
         Edit
       </a>
+      } @if (canRevise()) {
+      <a
+        class="ui-btn ui-btn-ghost"
+        [routerLink]="['/invoices/new']"
+        [queryParams]="{ id: invoice()?.id, revise: 1 }"
+      >
+        Revise
+      </a>
       } @if (canDelete()) {
       <button class="ui-btn ui-btn-ghost" type="button" [disabled]="busy()" (click)="remove()">
         Delete
@@ -46,6 +61,17 @@
     <span>{{ loadError() }}</span>
     <a class="ui-link" routerLink="/documents">Back to my invoices</a>
   </div>
+  } @if (viewing(); as v) {
+  <div class="ui-alert revision-banner" role="status" data-testid="revision-banner">
+    <span>
+      <strong>Version {{ v.revision }} (read-only)</strong> — replaced on {{
+      formatDateTime(v.supersededAt) }}{{ v.supersededByName ? ' by ' + v.supersededByName : '' }}{{
+      v.reason ? ': “' + v.reason + '”' : '' }}
+    </span>
+    <a class="ui-link" [routerLink]="['/documents', invoice()?.id]">
+      Open current version (version {{ v.currentRevision }})
+    </a>
+  </div>
   } @if (actionError()) {
   <div class="ui-alert" role="alert">
     <span>{{ actionError() }}</span>
@@ -53,157 +79,111 @@
   </div>
   } @if (loading()) {
   <div class="ui-card ui-empty"><strong>Loading invoice…</strong></div>
-  } @else if (invoice(); as inv) {
-  <div class="detail-grid">
-    <article class="ui-card paper" aria-label="Invoice document">
-      <header class="paper-head">
-        <div class="paper-issuer">
-          @if (inv.company.logoDataUrl) {
-          <img class="paper-logo" [src]="inv.company.logoDataUrl" alt="" />
-          } @else {
-          <span class="paper-logo paper-logo-fallback" aria-hidden="true">
-            {{ inv.company.name.slice(0, 1) }}
-          </span>
-          }
-          <div>
-            <strong>{{ inv.company.name }}</strong>
-            @if (inv.company.address) {
-            <span>{{ inv.company.address }}</span>
-            } @if (inv.company.phone || inv.company.email) {
-            <span
-              >{{ inv.company.phone }}{{ inv.company.phone && inv.company.email ? ' · ' : '' }}{{
-              inv.company.email }}</span
-            >
-            } @if (inv.company.taxId) {
-            <span>Tax ID {{ inv.company.taxId }}</span>
-            }
-          </div>
-        </div>
+  } @else if (invoice(); as inv) { @if (flow(); as f) {
+  <section class="ui-card flow-card" aria-labelledby="flow-heading" data-testid="document-flow">
+    <header class="flow-head">
+      <div>
+        <h2 id="flow-heading">Document flow</h2>
+        <p>This invoice was generated from a goods receipt of an accepted quotation.</p>
+      </div>
+    </header>
 
-        <div class="paper-title">
-          <strong>INVOICE</strong>
-          <span>{{ inv.number ?? 'Draft' }}</span>
+    <ol class="flow-steps">
+      @if (f.quotation; as q) {
+      <li class="flow-step" data-testid="flow-step-quotation">
+        <a [routerLink]="['/quotations', q.id]">
+          <span class="flow-mark">Q</span>
+          <span class="flow-body">
+            <span class="flow-type">Quotation</span>
+            <strong>{{ q.number }}</strong>
+            <span class="flow-meta"
+              >{{ formatDate(q.date) }} · {{ formatMoney(q.total, q.currency) }}</span
+            >
+          </span>
+          <span class="ui-badge ui-badge-green"
+            >{{ documentStatusLabel[q.status] ?? q.status }}</span
+          >
+        </a>
+      </li>
+      }
+      <li class="flow-step" data-testid="flow-step-goods-receipt">
+        <a [routerLink]="['/goods-receipts', f.goodsReceipt.id]">
+          <span class="flow-mark">GR</span>
+          <span class="flow-body">
+            <span class="flow-type">Goods receipt</span>
+            <strong>{{ f.goodsReceipt.number }}</strong>
+            <span class="flow-meta"
+              >{{ formatDate(f.goodsReceipt.date) }} · {{ f.goodsReceipt.acceptedQuantity }}
+              accepted in {{ f.goodsReceipt.lineCount }} line{{ f.goodsReceipt.lineCount === 1 ? ''
+              : 's' }}</span
+            >
+          </span>
+          <span class="ui-badge ui-badge-green"
+            >{{ documentStatusLabel[f.goodsReceipt.status] ?? f.goodsReceipt.status }}</span
+          >
+        </a>
+      </li>
+      <li class="flow-step is-current" data-testid="flow-step-invoice" aria-current="page">
+        <div>
+          <span class="flow-mark">INV</span>
+          <span class="flow-body">
+            <span class="flow-type">Invoice · this document</span>
+            <strong>{{ inv.number }}</strong>
+            <span class="flow-meta"
+              >{{ formatDate(inv.issueDate) }} · {{ formatMoney(inv.totals.grandTotal, inv.currency)
+              }}</span
+            >
+          </span>
           <span [class]="statusClass(displayStatus())">{{ statusLabel[displayStatus()] }}</span>
         </div>
-      </header>
-
-      <div class="paper-meta">
-        <div>
-          <span class="paper-label">Billed to</span>
-          <strong>{{ inv.customer.name }}</strong>
-          @if (inv.customer.address) {
-          <span>{{ inv.customer.address }}</span>
-          } @if (inv.customer.email) {
-          <span>{{ inv.customer.email }}</span>
-          } @if (inv.customer.phone) {
-          <span>{{ inv.customer.phone }}</span>
-          } @if (inv.customer.contact; as contact) {
-          <span class="paper-contact">
-            Attn. {{ contact.name }}{{ contact.jobTitle ? ' · ' + contact.jobTitle : '' }}{{
-            contact.phone ? ' · ' + contact.phone : '' }}
-          </span>
-          }
-        </div>
-        <dl class="paper-dates">
-          <div>
-            <dt>Invoice date</dt>
-            <dd>{{ formatDate(inv.issueDate) }}</dd>
-          </div>
-          <div>
-            <dt>Due date</dt>
-            <dd>{{ formatDate(inv.dueDate) }}</dd>
-          </div>
-          @if (inv.referenceNumber) {
-          <div>
-            <dt>Reference</dt>
-            <dd>{{ inv.referenceNumber }}</dd>
-          </div>
-          }
-        </dl>
-      </div>
-
-      <div class="ui-table-wrap">
-        <table class="ui-table paper-table">
-          <thead>
-            <tr>
-              <th>Description</th>
-              <th class="num">Qty</th>
-              <th class="num">Unit price</th>
-              <th class="num">Tax</th>
-              <th class="num">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (item of inv.items; track item.id) {
-            <tr>
-              <td>
-                <strong>{{ item.name }}</strong>
-                @if (item.description) {
-                <span class="ui-muted">{{ item.description }}</span>
-                }
-              </td>
-              <td class="num">{{ item.quantity }}</td>
-              <td class="num">{{ formatMoney(item.unitPrice, inv.currency) }}</td>
-              <td class="num">{{ item.taxRate }}%</td>
-              <td class="num">{{ formatMoney(item.lineTotal, inv.currency) }}</td>
-            </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-
-      <div class="paper-totals">
-        <div class="totals-row">
-          <span>Subtotal</span><strong>{{ formatMoney(inv.totals.subtotal, inv.currency) }}</strong>
-        </div>
-        @if (inv.totals.discountTotal > 0) {
-        <div class="totals-row">
-          <span>Discount</span>
-          <strong>-{{ formatMoney(inv.totals.discountTotal, inv.currency) }}</strong>
-        </div>
-        } @if (inv.totals.taxTotal > 0) {
-        <div class="totals-row">
-          <span>Tax</span><strong>{{ formatMoney(inv.totals.taxTotal, inv.currency) }}</strong>
-        </div>
-        } @if (inv.totals.shippingAmount > 0) {
-        <div class="totals-row">
-          <span>Shipping</span>
-          <strong>{{ formatMoney(inv.totals.shippingAmount, inv.currency) }}</strong>
-        </div>
-        } @if (inv.totals.additionalCharges > 0) {
-        <div class="totals-row">
-          <span>Additional charges</span>
-          <strong>{{ formatMoney(inv.totals.additionalCharges, inv.currency) }}</strong>
-        </div>
-        }
-        <div class="totals-row totals-grand">
-          <span>Total</span><strong>{{ formatMoney(inv.totals.grandTotal, inv.currency) }}</strong>
-        </div>
-        @if (inv.totals.amountPaid > 0) {
-        <div class="totals-row">
-          <span>Paid</span><strong>{{ formatMoney(inv.totals.amountPaid, inv.currency) }}</strong>
-        </div>
-        <div class="totals-row totals-due">
-          <span>Balance due</span>
-          <strong>{{ formatMoney(inv.totals.balanceDue, inv.currency) }}</strong>
-        </div>
+      </li>
+    </ol>
+  </section>
+  }
+  <div class="detail-grid quote-grid">
+    <div class="sheet-column">
+      <div class="sheet-toolbar">
+        <span class="sheet-format">A4 · Portrait</span>
+        <span class="template-chip" data-testid="invoice-template">
+          <span
+            class="template-swatch"
+            [style.background]="inv.template.accentColor"
+            aria-hidden="true"
+          ></span>
+          {{ inv.template.key === 'custom' ? inv.template.name + ' · Template Builder' :
+          inv.template.name + ' template' }}
+        </span>
+        @if (inv.template.locked) {
+        <span class="template-note" data-testid="invoice-template-locked">
+          Kept from when it was {{ inv.status === 'VOID' ? 'voided' : 'issued' }}
+        </span>
+        } @else if (!viewing()) {
+        <a class="ui-link" routerLink="/templates/invoices" data-testid="change-invoice-template">
+          Change template
+        </a>
         }
       </div>
-
-      @if (inv.notes) {
-      <div class="paper-notes">
-        <span class="paper-label">Notes</span>
-        <p>{{ inv.notes }}</p>
-      </div>
-      } @if (inv.voidedAt) {
-      <div class="paper-notes paper-void">
-        <span class="paper-label">Voided</span>
-        <p>{{ inv.voidReason }}</p>
-      </div>
-      }
-    </article>
+      <app-invoice-sheet
+        [invoice]="inv"
+        [templateKey]="inv.template.key"
+        [accentColor]="inv.template.accentColor"
+        [design]="inv.template.design"
+      />
+    </div>
 
     <aside class="status-column">
+      @if (viewing()) {
+      <section class="ui-card track-card">
+        <header class="track-head">
+          <h2>Archived version</h2>
+          <span class="ui-badge ui-badge-amber">Superseded</span>
+        </header>
+        <p class="track-hint">
+          This is how the invoice looked as version {{ inv.revision }}. Status changes, payments and
+          follow-ups live on the current version.
+        </p>
+      </section>
+      } @else {
       <section class="ui-card track-card" aria-labelledby="status-heading">
         <header class="track-head">
           <h2 id="status-heading">Status</h2>
@@ -260,6 +240,20 @@
         }
       </section>
 
+      @if (inv.terminPlan; as plan) {
+      <app-termin-plan-card [plan]="plan" [currentId]="inv.id" (changed)="planChanged()" />
+      }
+
+      <app-versions-card
+        [revision]="inv.revision"
+        [revisions]="inv.revisions"
+        [revisionBlockedBy]="inv.revisionBlockedBy"
+        [baseLink]="['/documents', inv.id]"
+        [currency]="inv.currency"
+        reviseHint="Revising an issued invoice keeps the replaced version here."
+        (download)="downloadRevision($event)"
+      />
+
       <section class="ui-card history-card" aria-labelledby="history-heading">
         <header class="track-head">
           <h2 id="history-heading">History</h2>
@@ -287,9 +281,11 @@
         </ol>
         }
       </section>
+      }
     </aside>
   </div>
 
+  @if (!viewing()) {
   <section class="ui-card followup-card" aria-labelledby="followup-heading">
     <header class="ui-panel-head">
       <div>
@@ -424,5 +420,43 @@
     </ul>
     }
   </section>
-  }
+
+  } @if (flow()) {
+  <section
+    class="ui-card flow-card flow-history-card"
+    aria-labelledby="flow-history-heading"
+    data-testid="flow-history-card"
+  >
+    <header class="flow-head">
+      <div>
+        <h2 id="flow-history-heading">Flow history</h2>
+        <p>
+          Everything that happened to the quotation, the goods receipt and this invoice, oldest
+          first.
+        </p>
+      </div>
+    </header>
+    <ol class="flow-timeline" data-testid="flow-history">
+      @for (event of flowEvents(); track event.id) {
+      <li [class]="'flow-event is-' + event.documentType.toLowerCase()" data-testid="flow-event">
+        <span class="flow-event-mark" aria-hidden="true"
+          >{{ documentTypeMark[event.documentType] }}</span
+        >
+        <div class="flow-event-body">
+          <strong>{{ flowEventTitle(event) }}</strong>
+          <span class="flow-event-meta">
+            <a [routerLink]="documentLink(event.documentType, event.documentId)"
+              >{{ event.documentNumber ?? documentTypeLabel[event.documentType] }}</a
+            >
+            · {{ formatDateTime(event.at) }}{{ event.actorName ? ' · ' + event.actorName : '' }}
+          </span>
+          @if (event.reason) {
+          <span class="flow-event-reason">{{ event.reason }}</span>
+          }
+        </div>
+      </li>
+      }
+    </ol>
+  </section>
+  } }
 </section>

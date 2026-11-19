@@ -129,7 +129,13 @@
                 <span class="kind-mark" aria-hidden="true">I</span>
                 <span>
                   <strong>{{ doc.number ?? 'Draft' }}</strong>
-                  <span class="ui-muted">Invoice</span>
+                  <span class="ui-muted"
+                    >Invoice@if (doc.termin) { ·
+                    <span class="termin-tag" data-testid="row-termin"
+                      >Termin {{ terminShortLabel(doc.termin) }}</span
+                    >
+                    }</span
+                  >
                 </span>
               </a>
             </td>

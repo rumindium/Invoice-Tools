@@ -1,0 +1,157 @@
+<div class="frame" [class.has-rulers]="store.showRulers()">
+  @if (store.showRulers()) {
+  <span class="ruler-corner" aria-hidden="true">mm</span>
+  <canvas #rulerX class="ruler ruler-x" aria-hidden="true" data-testid="ruler-x"></canvas>
+  <canvas #rulerY class="ruler ruler-y" aria-hidden="true" data-testid="ruler-y"></canvas>
+  }
+  <div
+    #workspace
+    class="workspace"
+    [class.is-drop]="dropActive()"
+    [class.is-preview]="store.preview()"
+    data-testid="builder-workspace"
+    (pointerdown)="workspacePointerDown($event)"
+    (scroll)="scheduleRulers()"
+    (wheel)="wheel($event)"
+    (dragover)="dragOver($event)"
+    (dragleave)="dragLeave($event)"
+    (drop)="drop($event)"
+  >
+    <div class="stage">
+      <div
+        #sizer
+        class="sizer"
+        [style.width.px]="page().width * zoom()"
+        [style.height.px]="page().height * zoom()"
+      >
+        <div
+          class="page"
+          data-testid="builder-page"
+          [style.width.px]="page().width"
+          [style.height.px]="page().height"
+          [style.background]="design().page.background"
+          [style.transform]="'scale(' + zoom() + ')'"
+        >
+          @if (store.showMargins() && !store.preview()) {
+          <div
+            class="margin-guide"
+            [style.inset.px]="margin"
+            aria-hidden="true"
+            data-testid="margin-guide"
+          ></div>
+          } @for (el of visible(); track el.id) {
+          <app-builder-element
+            class="el"
+            [class.is-locked]="el.locked"
+            [element]="el"
+            [context]="store.context()"
+            [preview]="store.preview()"
+            [editing]="store.editingId() === el.id"
+            [attr.data-element-id]="el.id"
+            [attr.data-testid]="'el-' + el.type"
+            (measured)="store.setAutoHeight(el.id, $event)"
+            (textCommit)="commitText(el.id, $event)"
+            (pointerdown)="elementPointerDown($event, el)"
+            (pointerenter)="store.hoverId.set(el.id)"
+            (pointerleave)="store.hoverId.set(null)"
+            (dblclick)="elementDoubleClick(el)"
+          />
+          }
+        </div>
+
+        @if (!store.preview()) {
+        <div class="overlay" aria-hidden="true">
+          @if (hoverBox(); as box) {
+          <div
+            class="hover-box"
+            [style.left.px]="box.left"
+            [style.top.px]="box.top"
+            [style.width.px]="box.width"
+            [style.height.px]="box.height"
+            [style.transform]="'rotate(' + box.rotation + 'deg)'"
+          ></div>
+          } @for (box of selectionBoxes(); track box.id) {
+          <div
+            class="sel-box"
+            [class.is-locked]="box.locked"
+            data-testid="selection-box"
+            [style.left.px]="box.left"
+            [style.top.px]="box.top"
+            [style.width.px]="box.width"
+            [style.height.px]="box.height"
+            [style.transform]="'rotate(' + box.rotation + 'deg)'"
+          >
+            @if (box.locked) {
+            <span class="lock-badge">
+              <svg viewBox="0 0 24 24">
+                <rect x="5" y="11" width="14" height="9" rx="2" />
+                <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+              </svg>
+            </span>
+            }
+          </div>
+          } @if (groupBox(); as box) {
+          <div
+            class="group-box"
+            data-testid="group-box"
+            [style.left.px]="box.left"
+            [style.top.px]="box.top"
+            [style.width.px]="box.width"
+            [style.height.px]="box.height"
+          ></div>
+          } @if (handleBox(); as box) {
+          <div
+            class="handles"
+            [style.left.px]="box.left"
+            [style.top.px]="box.top"
+            [style.width.px]="box.width"
+            [style.height.px]="box.height"
+            [style.transform]="'rotate(' + box.rotation + 'deg)'"
+          >
+            @for (handle of handles(); track handle) {
+            <div
+              [class]="'handle handle-' + handle"
+              [attr.data-testid]="'handle-' + handle"
+              (pointerdown)="resizeStart($event, handle)"
+            ></div>
+            }
+            <div class="rotate" data-testid="handle-rotate" (pointerdown)="rotateStart($event)">
+              <svg viewBox="0 0 24 24">
+                <path d="M20 12a8 8 0 1 1-2.34-5.66" />
+                <path d="M20 4v4.5h-4.5" />
+              </svg>
+            </div>
+          </div>
+          } @for (x of guideLines().vertical; track $index) {
+          <div class="guide guide-v" data-testid="snap-guide" [style.left.px]="x"></div>
+          } @for (y of guideLines().horizontal; track $index) {
+          <div class="guide guide-h" data-testid="snap-guide" [style.top.px]="y"></div>
+          } @if (marquee(); as box) {
+          <div
+            class="marquee"
+            data-testid="marquee"
+            [style.left.px]="box.left"
+            [style.top.px]="box.top"
+            [style.width.px]="box.width"
+            [style.height.px]="box.height"
+          ></div>
+          } @if (badge(); as badge) {
+          <div
+            class="badge"
+            data-testid="gesture-badge"
+            [style.left.px]="badge.left"
+            [style.top.px]="badge.top"
+          >
+            {{ badge.text }}
+          </div>
+          }
+        </div>
+        }
+      </div>
+    </div>
+
+    @if (dropActive()) {
+    <div class="drop-hint" aria-hidden="true">Drop to add it to the page</div>
+    }
+  </div>
+</div>

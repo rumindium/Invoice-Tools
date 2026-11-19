@@ -1,0 +1,332 @@
+:host {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+}
+
+svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.glow {
+  fill: #fff;
+  opacity: 0.12;
+}
+
+.paper {
+  fill: #fff;
+}
+
+.paper.faded {
+  opacity: 0.55;
+}
+
+.shadowed {
+  filter: drop-shadow(0 18px 28px rgba(15, 23, 42, 0.22));
+}
+
+.fill-a {
+  fill: var(--art-a);
+}
+
+.fill-b {
+  fill: var(--art-b);
+}
+
+.fill-c {
+  fill: var(--art-c, #059669);
+}
+
+.fill-white {
+  fill: #fff;
+}
+
+.line {
+  fill: #e2e8f0;
+}
+
+.line.strong {
+  fill: #94a3b8;
+}
+
+.caption {
+  fill: #fff;
+  font: 700 13px var(--font-sans, sans-serif);
+}
+
+.badge-text {
+  fill: #fff;
+  font: 800 12px var(--font-sans, sans-serif);
+}
+
+.check-badge {
+  fill: #22c55e;
+  stroke: #fff;
+  stroke-width: 3;
+}
+
+.check-mark,
+.connector {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.check-mark {
+  stroke: #fff;
+  stroke-width: 3;
+}
+
+.connector {
+  stroke: #fff;
+  stroke-width: 4;
+  stroke-dasharray: 2 12;
+  opacity: 0.9;
+}
+
+.stamp-ring {
+  fill: rgba(255, 255, 255, 0.92);
+  stroke: #16a34a;
+  stroke-width: 4;
+}
+
+.stamp-ring.thin {
+  fill: none;
+  stroke-width: 1.5;
+}
+
+.stamp-text {
+  fill: #16a34a;
+  font: 900 19px var(--font-sans, sans-serif);
+  letter-spacing: 2px;
+}
+
+.coin {
+  fill: #fbbf24;
+  stroke: #f59e0b;
+  stroke-width: 4;
+}
+
+.coin-text {
+  fill: #92400e;
+  font: 800 14px var(--font-sans, sans-serif);
+}
+
+.sparkle {
+  fill: #fff;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.bar {
+  fill: #cbd5e1;
+  transform-box: fill-box;
+  transform-origin: bottom;
+}
+
+.ring-track,
+.ring {
+  fill: none;
+  stroke-width: 12;
+}
+
+.ring-track {
+  stroke: #e2e8f0;
+}
+
+.ring {
+  stroke: var(--art-a);
+  stroke-dasharray: 251;
+  stroke-dashoffset: 70;
+  stroke-linecap: round;
+}
+
+.ring-text {
+  fill: #0f172a;
+  font: 800 17px var(--font-sans, sans-serif);
+}
+
+.pill.paid {
+  fill: #bbf7d0;
+}
+
+.pill.due {
+  fill: #fde68a;
+}
+
+.dot {
+  fill: #ef4444;
+  stroke: #fff;
+  stroke-width: 3;
+}
+
+.bell {
+  transform-box: fill-box;
+  transform-origin: 50% 10%;
+}
+
+.sign {
+  fill: #0f172a;
+}
+
+.sign-text {
+  fill: #fff;
+  font: 700 17px var(--font-sans, sans-serif);
+}
+
+.initial {
+  fill: var(--art-a);
+  font: 800 18px var(--font-sans, sans-serif);
+}
+
+.window {
+  fill: #e0f2fe;
+  stroke: #bae6fd;
+  stroke-width: 3;
+}
+
+.plant {
+  fill: #22c55e;
+}
+
+/* ------------------------------------------------------------ Motion (active slide only) */
+
+:host(.is-active) {
+  .float {
+    animation: float 5s ease-in-out infinite;
+  }
+
+  .float-slow {
+    animation: float 7s ease-in-out infinite;
+  }
+
+  .float-fast {
+    animation: float 3.6s ease-in-out infinite;
+  }
+
+  .delay {
+    animation-delay: -1.6s;
+  }
+
+  .delay-2 {
+    animation-delay: -3.2s;
+  }
+
+  .sparkle {
+    animation: twinkle 2.8s ease-in-out infinite;
+  }
+
+  .connector {
+    animation: flow 1.4s linear infinite;
+  }
+
+  .stamp {
+    animation: stamp 700ms cubic-bezier(0.22, 1.4, 0.36, 1) 400ms both;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .bar {
+    animation: grow 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .ring {
+    animation: ring 1.2s cubic-bezier(0.22, 1, 0.36, 1) 200ms both;
+  }
+
+  .bell {
+    animation: swing 2.6s ease-in-out 600ms infinite;
+  }
+
+  .spin {
+    animation: spin 18s linear infinite;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes flow {
+  to {
+    stroke-dashoffset: -28;
+  }
+}
+
+@keyframes stamp {
+  from {
+    opacity: 0;
+    transform: scale(1.6) rotate(12deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+@keyframes grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes ring {
+  from {
+    stroke-dashoffset: 251;
+  }
+  to {
+    stroke-dashoffset: 70;
+  }
+}
+
+@keyframes swing {
+  0%,
+  60%,
+  100% {
+    transform: rotate(0);
+  }
+  10%,
+  30% {
+    transform: rotate(12deg);
+  }
+  20%,
+  40% {
+    transform: rotate(-12deg);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host(.is-active) * {
+    animation: none !important;
+  }
+}

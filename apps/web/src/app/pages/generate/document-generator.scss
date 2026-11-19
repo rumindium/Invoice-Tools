@@ -327,6 +327,15 @@
   margin-top: 7px;
 }
 
+.summary-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.summary-termins strong {
+  color: var(--accent);
+}
+
 .summary-note {
   display: flex;
   gap: 9px;
@@ -416,4 +425,12 @@
   .summary-column {
     grid-template-columns: 1fr;
   }
+}
+
+.revision-card {
+  border-color: #fcd34d;
+}
+
+.revision-card .form-card-head {
+  background: #fffbeb;
 }

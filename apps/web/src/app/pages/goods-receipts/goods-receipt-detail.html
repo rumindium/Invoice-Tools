@@ -1,0 +1,319 @@
+<section class="ui-page">
+  <header class="ui-page-head generator-head">
+    <div>
+      <a class="back-link" routerLink="/goods-receipts">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M20 12H4M10 6l-6 6 6 6" />
+        </svg>
+        My goods receipts
+      </a>
+      <p class="ui-eyebrow">Goods receipt</p>
+      <h1>{{ receipt()?.number ?? 'Goods receipt' }}</h1>
+      @if (receipt(); as current) {
+      <span class="version-pill" data-testid="document-version"
+        >Version {{ current.revision }}</span
+      >
+      @if (current.termin; as termin) {
+      <span class="termin-pill" data-testid="document-termin">{{ terminLabel(termin) }}</span>
+      } }
+      <p class="ui-sub">
+        Goods received against {{ receipt()?.source?.quotationNumber ?? 'the quotation' }}: count,
+        inspect, post, and download the goods receipt note.
+      </p>
+    </div>
+
+    <div class="detail-actions">
+      @if (receipt()?.canCreateInvoice && !viewing()) {
+      <button
+        class="ui-btn ui-btn-primary"
+        type="button"
+        [disabled]="creatingInvoice()"
+        (click)="openInvoiceDialog()"
+      >
+        {{ creatingInvoice() ? 'Creating…' : 'Create invoice' }}
+      </button>
+      }
+      <button class="ui-btn ui-btn-ghost" type="button" [disabled]="busy()" (click)="download()">
+        Download PDF
+      </button>
+      @if (canEdit()) {
+      <a class="ui-btn ui-btn-ghost" [routerLink]="['/goods-receipts', receipt()?.id, 'edit']">
+        Edit
+      </a>
+      } @if (canRevise()) {
+      <a
+        class="ui-btn ui-btn-ghost"
+        [routerLink]="['/goods-receipts', receipt()?.id, 'edit']"
+        [queryParams]="{ revise: 1 }"
+      >
+        Revise
+      </a>
+      } @if (canDelete()) {
+      <button class="ui-btn ui-btn-ghost" type="button" [disabled]="busy()" (click)="remove()">
+        Delete
+      </button>
+      }
+    </div>
+  </header>
+
+  @if (loadError()) {
+  <div class="ui-alert" role="alert">
+    <span>{{ loadError() }}</span>
+    <a class="ui-link" routerLink="/goods-receipts">Back to my goods receipts</a>
+  </div>
+  } @if (viewing(); as v) {
+  <div class="ui-alert revision-banner" role="status" data-testid="revision-banner">
+    <span>
+      <strong>Version {{ v.revision }} (read-only)</strong> — replaced on {{
+      formatDateTime(v.supersededAt) }}{{ v.supersededByName ? ' by ' + v.supersededByName : '' }}{{
+      v.reason ? ': “' + v.reason + '”' : '' }}
+    </span>
+    <a class="ui-link" [routerLink]="['/goods-receipts', receipt()?.id]">
+      Open current version (version {{ v.currentRevision }})
+    </a>
+  </div>
+  } @if (actionError()) {
+  <div class="ui-alert" role="alert">
+    <span>{{ actionError() }}</span>
+    <button class="ui-link" type="button" (click)="actionError.set('')">Close</button>
+  </div>
+  } @if (loading()) {
+  <div class="ui-card ui-empty"><strong>Loading goods receipt…</strong></div>
+  } @else if (receipt(); as gr) {
+  <div class="detail-grid quote-grid">
+    <div class="sheet-column">
+      <div class="sheet-toolbar">
+        <span class="sheet-format">A4 · Portrait</span>
+        <span class="template-chip" data-testid="goods-receipt-template">
+          <span
+            class="template-swatch"
+            [style.background]="gr.template.accentColor"
+            aria-hidden="true"
+          ></span>
+          {{ gr.template.key === 'custom' ? gr.template.name + ' · Template Builder' :
+          gr.template.name + ' template' }}
+        </span>
+        @if (gr.template.locked) {
+        <span class="template-note" data-testid="goods-receipt-template-locked">
+          Kept from when it was {{ gr.status === 'CANCELLED' ? 'cancelled' : 'posted' }}
+        </span>
+        } @else if (!viewing()) {
+        <a
+          class="ui-link"
+          routerLink="/templates/goods-receipts"
+          data-testid="change-goods-receipt-template"
+        >
+          Change template
+        </a>
+        }
+      </div>
+      <app-goods-receipt-sheet
+        [receipt]="gr"
+        [templateKey]="gr.template.key"
+        [accentColor]="gr.template.accentColor"
+        [design]="gr.template.design"
+      />
+    </div>
+
+    <aside class="status-column">
+      @if (viewing()) {
+      <section class="ui-card track-card">
+        <header class="track-head">
+          <h2>Archived version</h2>
+          <span class="ui-badge ui-badge-amber">Superseded</span>
+        </header>
+        <p class="track-hint">
+          This is how the goods receipt looked as version {{ gr.revision }}. Actions are available
+          on the current version.
+        </p>
+      </section>
+      } @else {
+      <section class="ui-card track-card" aria-labelledby="status-heading">
+        <header class="track-head">
+          <h2 id="status-heading">Status</h2>
+          <span [class]="statusClass(gr.status)">{{ statusLabel[gr.status] }}</span>
+        </header>
+
+        <ol class="tracker">
+          @for (step of tracker(); track step.key) {
+          <li [class]="'tracker-step is-' + step.state">
+            <span class="tracker-dot" aria-hidden="true"></span>
+            <span class="tracker-label">{{ step.label }}</span>
+          </li>
+          }
+        </ol>
+
+        @if (gr.nextStatuses.length === 0) {
+        <p class="track-hint">
+          This goods receipt was cancelled. The quotation can be received again with a new receipt.
+        </p>
+        } @else { @if (gr.status === 'RECEIVED') {
+        <p class="track-hint">Posted as received. Cancel it only to correct a wrong receipt.</p>
+        }
+        <div class="status-form">
+          <label class="ui-field">
+            <span>Change status to</span>
+            <select class="ui-select" [value]="selectedStatus()" (change)="updateSelection($event)">
+              <option value="">Select a status…</option>
+              @for (status of gr.nextStatuses; track status) {
+              <option [value]="status">{{ statusActionLabel[status] }}</option>
+              }
+            </select>
+          </label>
+
+          @if (selectedStatus() === 'CANCELLED') {
+          <label class="ui-field">
+            <span>Reason for cancelling</span>
+            <textarea
+              class="ui-textarea"
+              rows="2"
+              placeholder="Wrong delivery batch"
+              [value]="reason()"
+              (input)="updateReason($event)"
+            ></textarea>
+          </label>
+          }
+
+          <button
+            class="ui-btn ui-btn-primary status-apply"
+            type="button"
+            [disabled]="busy() || !selectedStatus()"
+            (click)="applyStatus()"
+          >
+            {{ busy() ? 'Saving…' : 'Apply status' }}
+          </button>
+        </div>
+        }
+      </section>
+
+      @if (gr.invoiceTerminPlan; as plan) {
+      <app-termin-plan-card
+        [plan]="plan"
+        [hideSource]="true"
+        testId="invoice-termin-plan"
+        (changed)="planChanged()"
+      />
+      } @else if (gr.status === 'RECEIVED') {
+      <section
+        class="ui-card next-step-card"
+        aria-labelledby="invoice-step-heading"
+        data-testid="goods-receipt-next-step"
+      >
+        <header class="track-head">
+          <h2 id="invoice-step-heading">Next step · Invoice</h2>
+        </header>
+        @if (gr.invoice; as invoice) {
+        <a
+          class="linked-doc"
+          [routerLink]="['/documents', invoice.id]"
+          data-testid="linked-invoice"
+        >
+          <span class="kind-mark" aria-hidden="true">INV</span>
+          <span class="linked-doc-body">
+            <strong>{{ invoice.number }}</strong>
+            <span>Created {{ formatDate(invoice.issueDate) }}</span>
+          </span>
+          <span class="ui-badge ui-badge-neutral"
+            >{{ documentStatusLabel[invoice.status] ?? invoice.status }}</span
+          >
+        </a>
+        } @else if (gr.canCreateInvoice) {
+        <p class="track-hint">
+          The goods are received. Bill the {{ formatQuantity(gr.totals.accepted) }} accepted unit{{
+          gr.totals.accepted === 1 ? '' : 's' }} at the quotation's prices in one invoice{{
+          gr.canSplitInvoice ? ', or split the bill into payment termins' : '' }}.
+        </p>
+        <button
+          class="ui-btn ui-btn-primary status-apply"
+          type="button"
+          [disabled]="creatingInvoice()"
+          (click)="openInvoiceDialog()"
+        >
+          {{ creatingInvoice() ? 'Creating…' : 'Create invoice' }}
+        </button>
+        } @else {
+        <p class="track-hint">Nothing was accepted on this receipt, so there is nothing to bill.</p>
+        }
+      </section>
+      } @if (gr.terminPlan; as plan) {
+      <app-termin-plan-card [plan]="plan" [currentId]="gr.id" (changed)="planChanged()" />
+      }
+
+      <section class="ui-card next-step-card" aria-labelledby="source-heading">
+        <header class="track-head">
+          <h2 id="source-heading">Source quotation</h2>
+        </header>
+        <a
+          class="linked-doc"
+          [routerLink]="['/quotations', gr.source.quotationId]"
+          data-testid="source-quotation"
+        >
+          <span class="kind-mark" aria-hidden="true">Q</span>
+          <span class="linked-doc-body">
+            <strong>{{ gr.source.quotationNumber }}</strong>
+            <span>{{ gr.recipient.name }} · {{ formatDate(gr.source.quotationDate) }}</span>
+          </span>
+          <span class="ui-badge ui-badge-green">Accepted</span>
+        </a>
+      </section>
+
+      <app-versions-card
+        [revision]="gr.revision"
+        [revisions]="gr.revisions"
+        [revisionBlockedBy]="gr.revisionBlockedBy"
+        [baseLink]="['/goods-receipts', gr.id]"
+        reviseHint="Revising a received goods receipt keeps the replaced version here."
+        (download)="downloadRevision($event)"
+      />
+
+      <section class="ui-card history-card" aria-labelledby="history-heading">
+        <header class="track-head">
+          <h2 id="history-heading">History</h2>
+          <span class="history-count">{{ gr.history.length }}</span>
+        </header>
+        <ol class="history">
+          @for (entry of history(); track entry.id) {
+          <li>
+            <span class="history-dot" aria-hidden="true"></span>
+            <div class="history-body">
+              <strong>{{ historyTitle(entry) }}</strong>
+              <span class="history-meta">
+                {{ formatDateTime(entry.at) }}{{ entry.actorName ? ' · ' + entry.actorName : '' }}
+              </span>
+              @if (entry.reason) {
+              <span class="history-reason">{{ entry.reason }}</span>
+              }
+            </div>
+          </li>
+          }
+        </ol>
+      </section>
+      }
+    </aside>
+  </div>
+  } @if (receipt(); as gr) {
+  <app-termin-dialog
+    [open]="invoiceDialog()"
+    heading="Create invoice"
+    intro="Bill the accepted quantities in one invoice, or split the bill into payment termins — each termin gets its own invoice with its share of every line."
+    [sourceLabel]="(gr.number ?? 'Goods receipt') + ' · accepted value'"
+    [total]="gr.totals.acceptedValue"
+    [currency]="gr.currency"
+    noun="invoice"
+    nounPlural="invoices"
+    [splitBlockedReason]="splitBlockedReason()"
+    [busy]="creatingInvoice()"
+    [error]="invoiceError()"
+    testId="invoice-dialog"
+    (confirmed)="createInvoice($event)"
+    (closed)="invoiceDialog.set(false)"
+  />
+  }
+</section>

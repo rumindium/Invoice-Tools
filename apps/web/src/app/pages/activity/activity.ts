@@ -13,6 +13,28 @@ const ACTION_LABEL: Record<string, string> = {
   'auth.password_reset': 'Password reset',
   'auth.password_changed': 'Password changed',
   'auth.profile_updated': 'Profile updated',
+  'quotation.revised': 'Quotation revised',
+  'goods_receipt.revised': 'Goods receipt revised',
+  'invoice.revised': 'Invoice revised',
+  'quotation.created': 'Quotation created',
+  'quotation.updated': 'Quotation updated',
+  'quotation.deleted': 'Quotation deleted',
+  'quotation.status_changed': 'Quotation status changed',
+  'quotation.goods_receipt_created': 'Goods receipt generated from quotation',
+  'goods_receipt.created': 'Goods receipt created',
+  'goods_receipt.updated': 'Goods receipt updated',
+  'goods_receipt.deleted': 'Goods receipt deleted',
+  'goods_receipt.status_changed': 'Goods receipt status changed',
+  'goods_receipt.invoice_created': 'Invoice generated from goods receipt',
+  'quotation.termin_plan_created': 'Quotation split into goods receipt termins',
+  'quotation.termin_plan_updated': 'Goods receipt termin split changed',
+  'quotation.termin_plan_deleted': 'Goods receipt termin plan deleted',
+  'goods_receipt.termin_plan_created': 'Goods receipt split into invoice termins',
+  'goods_receipt.termin_plan_updated': 'Invoice termin split changed',
+  'goods_receipt.termin_plan_deleted': 'Invoice termin plan deleted',
+  'invoice.termin_plan_created': 'Invoice split into payment termins',
+  'invoice.termin_plan_updated': 'Invoice termin split changed',
+  'invoice.termin_plan_deleted': 'Invoice termin plan deleted',
   'invoice.created': 'Invoice created',
   'invoice.updated': 'Invoice updated',
   'invoice.deleted': 'Invoice deleted',
@@ -32,18 +54,27 @@ const ACTION_LABEL: Record<string, string> = {
   'unit.created': 'Unit of measure added',
   'unit.removed': 'Unit of measure removed',
   'company.created': 'Company created',
+  'feedback.created': 'Feedback logged',
+  'feedback.updated': 'Feedback edited',
+  'feedback.status_changed': 'Feedback status changed',
+  'feedback.deleted': 'Feedback deleted',
   'company.updated': 'Company updated',
   'company.archived': 'Company archived',
+  'template.applied': 'Template applied',
 };
 
 const TARGET_LABEL: Record<AuditTargetType | 'ALL', string> = {
   ALL: 'Everything',
   user: 'Account',
+  quotation: 'Quotations',
+  goods_receipt: 'Goods receipts',
   invoice: 'Invoices',
   customer: 'Customers',
   item: 'Items',
   unit: 'Units',
   company: 'Company',
+  feedback: 'Feedback',
+  template: 'Templates',
 };
 
 const PAGE_SIZE = 50;
@@ -107,6 +138,16 @@ export class ActivityPage {
     const total = metadata['total'];
     if (typeof total === 'number' && total > 0) {
       parts.push(formatIdr(total));
+    }
+
+    const termin = metadata['termin'] as { sequence?: number; count?: number } | undefined;
+    if (termin && typeof termin.sequence === 'number') {
+      parts.push(`Termin ${termin.sequence}${termin.count ? ` of ${termin.count}` : ''}`);
+    }
+
+    const percentages = metadata['percentages'];
+    if (Array.isArray(percentages) && event.action.includes('.termin_plan_')) {
+      parts.push(percentages.map((value) => `${value}%`).join(' / '));
     }
 
     if (event.action.startsWith('auth.') && typeof metadata['email'] === 'string') {

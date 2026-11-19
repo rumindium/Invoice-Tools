@@ -1,0 +1,272 @@
+<div class="welcome-overlay" [class.is-leaving]="leaving()" data-testid="welcome-overlay">
+  <div
+    #dialog
+    class="welcome-dialog"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="'welcome-title-' + index()"
+    [attr.data-step]="current().id"
+    [style.--step-accent]="current().colors[0]"
+    data-testid="welcome-banner"
+    (keydown)="onKeydown($event)"
+  >
+    <header class="welcome-top">
+      <span class="welcome-brand">
+        <span class="welcome-brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 30 30" fill="none">
+            <rect x="5" y="5" width="8" height="8" rx="2.2" fill="currentColor" />
+            <rect x="17" y="17" width="8" height="8" rx="2.2" fill="currentColor" opacity="0.65" />
+            <path
+              d="M13 9h3.5A3.5 3.5 0 0 1 20 12.5V17"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            />
+          </svg>
+        </span>
+        <strong>Rumindium</strong> Invoice
+      </span>
+      <span class="welcome-step" aria-live="polite" data-testid="welcome-step">
+        Step {{ index() + 1 }} of {{ slides.length }} · {{ current().step }}
+      </span>
+      <button
+        class="welcome-signout"
+        type="button"
+        (click)="signOut()"
+        data-testid="welcome-signout"
+      >
+        Sign out
+      </button>
+    </header>
+
+    <div class="welcome-viewport">
+      <div
+        class="welcome-track"
+        [style.transform]="'translate3d(' + index() * -100 + '%, 0, 0)'"
+        data-testid="welcome-track"
+      >
+        @for (slide of slides; track slide.id; let i = $index) {
+        <section
+          class="slide"
+          [class.is-active]="i === index()"
+          [style]="slideStyle(slide)"
+          [attr.inert]="i === index() ? null : ''"
+          [attr.aria-hidden]="i === index() ? null : 'true'"
+          [attr.data-testid]="'welcome-slide-' + slide.id"
+        >
+          <div class="slide-art">
+            <span class="art-orb orb-1" aria-hidden="true"></span>
+            <span class="art-orb orb-2" aria-hidden="true"></span>
+            <app-welcome-art
+              [kind]="slide.id"
+              [active]="i === index()"
+              [companyName]="companyName()"
+              [logo]="logo()"
+            />
+          </div>
+
+          <div class="slide-body">
+            @if (slide.id === 'company' && done()) {
+            <div class="success" data-testid="welcome-success">
+              <svg class="success-mark" viewBox="0 0 80 80" aria-hidden="true">
+                <circle cx="40" cy="40" r="34" />
+                <path d="M25 41l10 10 20-21" />
+              </svg>
+              <p class="eyebrow reveal">All set</p>
+              <h2 #heading class="reveal" tabindex="-1" [id]="'welcome-title-' + i">
+                {{ savedName() }} is ready to go
+              </h2>
+              <p class="lead reveal">
+                Your letterhead is saved and will appear on every quotation, goods receipt and
+                invoice. You can update it any time under Company.
+              </p>
+            </div>
+            } @else {
+            <p class="eyebrow reveal">{{ slide.eyebrow }}</p>
+            <h2 #heading class="reveal" tabindex="-1" [id]="'welcome-title-' + i">
+              {{ slide.id === 'welcome' ? greeting() : slide.title }}
+            </h2>
+            <p class="lead reveal">{{ slide.body }}</p>
+
+            @if (slide.id !== 'company') {
+            <ul class="points">
+              @for (point of slide.points; track point.title; let p = $index) {
+              <li class="reveal" [style.--delay]="180 + p * 90 + 'ms'">
+                <span class="point-mark" aria-hidden="true">
+                  @if (point.badge) { {{ point.badge }} } @else {
+                  <svg viewBox="0 0 20 20"><path d="M5 10.5l3.2 3.2L15 7" /></svg>
+                  }
+                </span>
+                <span>
+                  <strong>{{ point.title }}</strong>
+                  <span>{{ point.text }}</span>
+                </span>
+              </li>
+              }
+            </ul>
+            } @else {
+            <form
+              id="welcome-company-form"
+              class="company-form reveal"
+              [formGroup]="form"
+              (ngSubmit)="submit()"
+              novalidate
+              data-testid="welcome-company-form"
+            >
+              <label class="field span-2">
+                <span>Company name <em>*</em></span>
+                <input
+                  formControlName="companyName"
+                  autocomplete="organization"
+                  placeholder="PT Maju Bersama"
+                  [attr.aria-invalid]="invalid('companyName')"
+                />
+                @if (invalid('companyName')) {
+                <small class="error">Enter your company name (at least 2 characters).</small>
+                }
+              </label>
+              <label class="field">
+                <span>Phone <em>*</em></span>
+                <input
+                  formControlName="phone"
+                  type="tel"
+                  autocomplete="tel"
+                  placeholder="+62 21 555 0123"
+                  [attr.aria-invalid]="invalid('phone')"
+                />
+                @if (invalid('phone')) {
+                <small class="error">Enter a phone number.</small>
+                }
+              </label>
+              <label class="field">
+                <span>Email</span>
+                <input
+                  formControlName="email"
+                  type="email"
+                  autocomplete="email"
+                  placeholder="hello@company.com"
+                  [attr.aria-invalid]="invalid('email')"
+                />
+                @if (invalid('email')) {
+                <small class="error">Enter a valid email address.</small>
+                }
+              </label>
+              <label class="field span-2">
+                <span>Address <em>*</em></span>
+                <textarea
+                  formControlName="address"
+                  rows="2"
+                  autocomplete="street-address"
+                  placeholder="Street, city, postal code"
+                  [attr.aria-invalid]="invalid('address')"
+                ></textarea>
+                @if (invalid('address')) {
+                <small class="error">Enter your company address.</small>
+                }
+              </label>
+              <label class="field">
+                <span>Tax ID (NPWP)</span>
+                <input formControlName="taxId" placeholder="01.234.567.8-901.000" />
+              </label>
+              <div class="field logo-field">
+                <span>Logo</span>
+                <div class="logo-row">
+                  <span class="logo-preview" aria-hidden="true">
+                    @if (logo()) {
+                    <img [src]="logo()" alt="" data-testid="welcome-logo-preview" />
+                    } @else {
+                    <svg viewBox="0 0 24 24">
+                      <path d="M4 16l4.5-4.5 3 3L16 10l4 4M4 5h16v14H4z" />
+                    </svg>
+                    }
+                  </span>
+                  <label class="logo-button">
+                    {{ logo() ? 'Change' : 'Upload' }}
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      (change)="onLogoSelected($event)"
+                      data-testid="welcome-logo-input"
+                    />
+                  </label>
+                  @if (logo()) {
+                  <button class="logo-remove" type="button" (click)="removeLogo()">Remove</button>
+                  }
+                </div>
+                @if (logoError()) {
+                <small class="error" data-testid="welcome-logo-error">{{ logoError() }}</small>
+                }
+              </div>
+              <label class="field">
+                <span>Signatory name</span>
+                <input formControlName="signatoryName" placeholder="Budi Santoso" />
+              </label>
+              <label class="field">
+                <span>Signatory title</span>
+                <input formControlName="signatoryTitle" placeholder="Director" />
+              </label>
+              @if (saveError()) {
+              <p class="form-error span-2" role="alert" data-testid="welcome-form-error">
+                {{ saveError() }}
+              </p>
+              }
+            </form>
+            } }
+          </div>
+        </section>
+        }
+      </div>
+    </div>
+
+    <footer class="welcome-footer">
+      <div class="dots" role="group" aria-label="Welcome steps">
+        @for (slide of slides; track slide.id; let i = $index) {
+        <button
+          type="button"
+          class="dot"
+          [class.is-active]="i === index()"
+          [class.is-done]="i < index()"
+          [disabled]="done()"
+          [attr.aria-current]="i === index() ? 'step' : null"
+          [attr.aria-label]="'Step ' + (i + 1) + ': ' + slide.step"
+          [attr.data-testid]="'welcome-dot-' + i"
+          (click)="go(i)"
+        ></button>
+        }
+      </div>
+      <div class="actions">
+        @if (index() > 0 && !done()) {
+        <button class="btn btn-ghost" type="button" (click)="back()" data-testid="welcome-back">
+          Back
+        </button>
+        } @if (!onForm()) {
+        <button class="btn btn-primary" type="button" (click)="next()" data-testid="welcome-next">
+          {{ index() === 0 ? 'Take the tour' : index() === lastIndex - 1 ? 'Set up my company' :
+          'Next' }}
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 4l6 6-6 6" /></svg>
+        </button>
+        } @else if (!done()) {
+        <button
+          class="btn btn-primary"
+          type="submit"
+          form="welcome-company-form"
+          [disabled]="saving()"
+          data-testid="welcome-submit"
+        >
+          {{ saving() ? 'Saving…' : 'Finish setup' }}
+        </button>
+        } @else {
+        <button
+          class="btn btn-primary"
+          type="button"
+          (click)="finish()"
+          data-testid="welcome-finish"
+        >
+          Start using Rumindium Invoice
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 4l6 6-6 6" /></svg>
+        </button>
+        }
+      </div>
+    </footer>
+  </div>
+</div>

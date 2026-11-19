@@ -40,6 +40,14 @@ export const routes: Routes = [
     title: 'Reset password — Rumindium Invoice',
   },
   {
+    // Full-screen editor, outside the app shell (no sidebar), still behind sign-in.
+    path: 'templates/builder/:id',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./pages/template-builder/template-builder').then((page) => page.TemplateBuilderPage),
+    title: 'Template Editor — Rumindium Invoice',
+  },
+  {
     path: '',
     canActivate: [authGuard],
     loadComponent: () => import('./layouts/app-shell').then((layout) => layout.AppShell),
@@ -51,10 +59,78 @@ export const routes: Routes = [
         title: 'Dashboard — Rumindium Invoice',
       },
       {
+        path: 'quotations',
+        loadComponent: () =>
+          import('./pages/quotations/quotations').then((page) => page.QuotationsPage),
+        title: 'My Quotations — Rumindium Invoice',
+      },
+      {
+        path: 'quotations/new',
+        loadComponent: () =>
+          import('./pages/quotations/quotation-editor').then((page) => page.QuotationEditorPage),
+        title: 'Create Quotation — Rumindium Invoice',
+      },
+      {
+        path: 'quotations/:id/revisions/:revision',
+        loadComponent: () =>
+          import('./pages/quotations/quotation-detail').then((page) => page.QuotationDetailPage),
+        title: 'Quotation version — Rumindium Invoice',
+      },
+      {
+        path: 'quotations/:id',
+        loadComponent: () =>
+          import('./pages/quotations/quotation-detail').then((page) => page.QuotationDetailPage),
+        title: 'Quotation — Rumindium Invoice',
+      },
+      {
+        path: 'goods-receipts',
+        loadComponent: () =>
+          import('./pages/goods-receipts/goods-receipts').then((page) => page.GoodsReceiptsPage),
+        title: 'My Goods Receipts — Rumindium Invoice',
+      },
+      {
+        path: 'goods-receipts/new',
+        loadComponent: () =>
+          import('./pages/goods-receipts/goods-receipt-new').then(
+            (page) => page.GoodsReceiptNewPage,
+          ),
+        title: 'New Goods Receipt — Rumindium Invoice',
+      },
+      {
+        path: 'goods-receipts/:id/edit',
+        loadComponent: () =>
+          import('./pages/goods-receipts/goods-receipt-editor').then(
+            (page) => page.GoodsReceiptEditorPage,
+          ),
+        title: 'Edit Goods Receipt — Rumindium Invoice',
+      },
+      {
+        path: 'goods-receipts/:id/revisions/:revision',
+        loadComponent: () =>
+          import('./pages/goods-receipts/goods-receipt-detail').then(
+            (page) => page.GoodsReceiptDetailPage,
+          ),
+        title: 'Goods Receipt version — Rumindium Invoice',
+      },
+      {
+        path: 'goods-receipts/:id',
+        loadComponent: () =>
+          import('./pages/goods-receipts/goods-receipt-detail').then(
+            (page) => page.GoodsReceiptDetailPage,
+          ),
+        title: 'Goods Receipt — Rumindium Invoice',
+      },
+      {
         path: 'documents',
         loadComponent: () =>
           import('./pages/documents/documents').then((page) => page.DocumentsPage),
         title: 'My Invoices — Rumindium Invoice',
+      },
+      {
+        path: 'documents/:id/revisions/:revision',
+        loadComponent: () =>
+          import('./pages/invoices/invoice-detail').then((page) => page.InvoiceDetailPage),
+        title: 'Invoice version — Rumindium Invoice',
       },
       {
         path: 'documents/:id',
@@ -67,6 +143,60 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/generate/document-generator').then((page) => page.DocumentGeneratorPage),
         title: 'Create Invoice — Rumindium Invoice',
+      },
+      {
+        path: 'templates/quotations',
+        loadComponent: () =>
+          import('./pages/templates/document-templates').then((page) => page.DocumentTemplatesPage),
+        data: { documentType: 'quotation' },
+        title: 'Quotation Templates — Rumindium Invoice',
+      },
+      {
+        path: 'templates/goods-receipts',
+        loadComponent: () =>
+          import('./pages/templates/document-templates').then((page) => page.DocumentTemplatesPage),
+        data: { documentType: 'goods-receipt' },
+        title: 'Goods Receipt Templates — Rumindium Invoice',
+      },
+      {
+        path: 'templates/invoices',
+        loadComponent: () =>
+          import('./pages/templates/document-templates').then((page) => page.DocumentTemplatesPage),
+        data: { documentType: 'invoice' },
+        title: 'Invoice Templates — Rumindium Invoice',
+      },
+      {
+        path: 'templates/builder',
+        loadComponent: () =>
+          import('./pages/template-builder/template-library').then(
+            (page) => page.TemplateLibraryPage,
+          ),
+        title: 'Template Builder — Rumindium Invoice',
+      },
+      { path: 'templates', pathMatch: 'full', redirectTo: 'templates/quotations' },
+      {
+        path: 'feedback',
+        loadComponent: () =>
+          import('./pages/feedback/feedback-list').then((page) => page.FeedbackListPage),
+        title: 'Feedback — Rumindium Invoice',
+      },
+      {
+        path: 'feedback/new',
+        loadComponent: () =>
+          import('./pages/feedback/feedback-editor').then((page) => page.FeedbackEditorPage),
+        title: 'Log Feedback — Rumindium Invoice',
+      },
+      {
+        path: 'feedback/:id/edit',
+        loadComponent: () =>
+          import('./pages/feedback/feedback-editor').then((page) => page.FeedbackEditorPage),
+        title: 'Edit Feedback — Rumindium Invoice',
+      },
+      {
+        path: 'feedback/:id',
+        loadComponent: () =>
+          import('./pages/feedback/feedback-detail').then((page) => page.FeedbackDetailPage),
+        title: 'Feedback — Rumindium Invoice',
       },
       {
         path: 'customers',

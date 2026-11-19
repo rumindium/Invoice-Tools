@@ -3,7 +3,17 @@ import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiConfigService } from './api-config.service';
 
-export type AuditTargetType = 'user' | 'invoice' | 'customer' | 'item' | 'unit' | 'company';
+export type AuditTargetType =
+  | 'user'
+  | 'quotation'
+  | 'goods_receipt'
+  | 'invoice'
+  | 'customer'
+  | 'item'
+  | 'unit'
+  | 'company'
+  | 'feedback'
+  | 'template';
 
 export interface AuditEvent {
   id: string;

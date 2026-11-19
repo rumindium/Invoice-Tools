@@ -1,0 +1,319 @@
+<!-- Shared fragments; each layout arranges and styles them differently. -->
+<ng-template #companyDetails>
+  @for (line of companyLines(); track line) {
+  <span>{{ line }}</span>
+  }
+</ng-template>
+
+<ng-template #recipientBlock>
+  <strong class="recipient-name">{{ doc().party.name }}</strong>
+  @if (doc().party.attention; as attn) {
+  <span class="recipient-attention">{{ attn }}</span>
+  } @for (line of doc().party.lines; track line) {
+  <span class="recipient-line">{{ line }}</span>
+  }
+</ng-template>
+
+<ng-template #logo>
+  @if (doc().company.logoDataUrl) {
+  <img class="logo" [src]="doc().company.logoDataUrl" alt="" />
+  }
+</ng-template>
+
+<ng-template #itemsTable>
+  <table class="items">
+    <thead>
+      <tr>
+        <th class="col-no">#</th>
+        <th>Description</th>
+        <th class="num">Qty</th>
+        <th class="num">Unit price</th>
+        <th class="num">Tax</th>
+        <th class="num">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (item of doc().items; track item.id; let i = $index) {
+      <tr [attr.data-testid]="prefix() + '-sheet-item'">
+        <td class="col-no">{{ i + 1 }}</td>
+        <td>
+          <strong>{{ item.name }}</strong>
+          @if (item.description) {
+          <span class="item-description">{{ item.description }}</span>
+          }
+        </td>
+        <td class="num">{{ item.quantity }} {{ item.unit }}</td>
+        <td class="num">{{ formatMoney(item.unitPrice, doc().currency) }}</td>
+        <td class="num">{{ item.taxRate > 0 ? item.taxRate + '%' : '—' }}</td>
+        <td class="num">{{ formatMoney(item.lineTotal, doc().currency) }}</td>
+      </tr>
+      }
+    </tbody>
+  </table>
+</ng-template>
+
+<ng-template #totalRows>
+  @for (row of doc().totals; track row.label) {
+  <div class="totals-row"><span>{{ row.label }}</span><strong>{{ row.value }}</strong></div>
+  }
+</ng-template>
+
+<ng-template #sections>
+  @for (row of doc().settlement; track row.label; let last = $last) {
+  <div class="settlement-row" [class.is-emphasis]="last" data-testid="sheet-settlement">
+    <span>{{ row.label }}</span><strong>{{ row.value }}</strong>
+  </div>
+  } @for (section of doc().sections; track section.label) { @if (section.body) {
+  <section class="text-section" [class.is-danger]="section.tone === 'danger'">
+    <span class="section-label"><i class="section-marker"></i>{{ section.label }}</span>
+    <p>{{ section.body }}</p>
+  </section>
+  } }
+</ng-template>
+
+<ng-template #signature>
+  @if (doc().signature; as signature) {
+  <footer
+    class="signature"
+    [class.is-compact]="signature.compact"
+    [attr.data-testid]="prefix() + '-signature'"
+  >
+    <span class="signature-date">{{ signature.date }}</span>
+    <span class="signature-greeting">{{ signature.greeting }}</span>
+    <div class="signature-image">
+      @if (signature.imageDataUrl) {
+      <img [src]="signature.imageDataUrl" alt="Signature" />
+      }
+    </div>
+    <strong>{{ signature.name }}</strong>
+    <span class="signature-title">{{ signature.title }}</span>
+  </footer>
+  }
+</ng-template>
+
+<article
+  [class]="'sheet layout-' + layout()"
+  [style]="themeStyle()"
+  [attr.data-testid]="testId()"
+  [attr.data-layout]="layout()"
+  [attr.data-accent]="accent()"
+  [attr.aria-label]="doc().titleCase + ' document'"
+>
+  @switch (layout()) {
+  <!-- ============================================================ Classic -->
+  @case ('classic') {
+  <header class="classic-head">
+    <div class="issuer">
+      <ng-container *ngTemplateOutlet="logo" />
+      <div class="issuer-text">
+        <strong class="company-name">{{ doc().company.name }}</strong>
+        <ng-container *ngTemplateOutlet="companyDetails" />
+      </div>
+    </div>
+    <div class="title-block">
+      <strong class="doc-title">{{ doc().title }}</strong>
+      <span class="doc-number">{{ doc().number }}</span>
+      <span [class]="doc().statusClass" [attr.data-testid]="prefix() + '-status'"
+        >{{ doc().statusLabel }}</span
+      >
+    </div>
+  </header>
+  <div class="parties">
+    <div class="recipient" [attr.data-testid]="prefix() + '-recipient'">
+      <span class="label">{{ doc().party.heading }}</span>
+      <ng-container *ngTemplateOutlet="recipientBlock" />
+    </div>
+    <dl class="dates">
+      @for (row of doc().details; track row.label) {
+      <div>
+        <dt>{{ row.label }}</dt>
+        <dd>{{ row.value }}</dd>
+      </div>
+      }
+    </dl>
+  </div>
+  <ng-container *ngTemplateOutlet="itemsTable" />
+  <div class="totals">
+    <ng-container *ngTemplateOutlet="totalRows" />
+    <div class="totals-grand">
+      <span>Total</span>
+      <strong [attr.data-testid]="prefix() + '-grand-total'">{{ doc().grandTotal }}</strong>
+    </div>
+  </div>
+  <ng-container *ngTemplateOutlet="sections" />
+  <ng-container *ngTemplateOutlet="signature" />
+  }
+
+  <!-- ============================================================ Modern -->
+  @case ('modern') {
+  <header class="modern-band">
+    <div class="issuer">
+      @if (doc().company.logoDataUrl) {
+      <span class="logo-tile"><ng-container *ngTemplateOutlet="logo" /></span>
+      }
+      <div class="issuer-text">
+        <strong class="company-name">{{ doc().company.name }}</strong>
+        <ng-container *ngTemplateOutlet="companyDetails" />
+      </div>
+    </div>
+    <div class="title-block">
+      <strong class="doc-title">{{ doc().title }}</strong>
+      <span class="doc-number">{{ doc().number }}</span>
+      <span class="status-pill" [attr.data-testid]="prefix() + '-status'"
+        >{{ doc().statusLabel }}</span
+      >
+    </div>
+  </header>
+  <div class="modern-body">
+    <div class="modern-tiles">
+      @for (row of doc().details; track row.label) {
+      <div class="tile">
+        <span>{{ row.label }}</span>
+        <strong>{{ row.value }}</strong>
+      </div>
+      }
+    </div>
+    <div class="recipient modern-recipient" [attr.data-testid]="prefix() + '-recipient'">
+      <span class="label">{{ doc().party.preparedHeading }}</span>
+      <ng-container *ngTemplateOutlet="recipientBlock" />
+    </div>
+    <ng-container *ngTemplateOutlet="itemsTable" />
+    <div class="totals">
+      <ng-container *ngTemplateOutlet="totalRows" />
+      <div class="totals-grand">
+        <span>Total</span>
+        <strong [attr.data-testid]="prefix() + '-grand-total'">{{ doc().grandTotal }}</strong>
+      </div>
+    </div>
+    <ng-container *ngTemplateOutlet="sections" />
+    <ng-container *ngTemplateOutlet="signature" />
+  </div>
+  <span class="modern-strip" aria-hidden="true"></span>
+  }
+
+  <!-- ============================================================ Minimal -->
+  @case ('minimal') {
+  <header class="minimal-head">
+    <div class="issuer">
+      <ng-container *ngTemplateOutlet="logo" />
+      <div class="issuer-text">
+        <strong class="company-name">{{ doc().company.name }}</strong>
+        <ng-container *ngTemplateOutlet="companyDetails" />
+      </div>
+    </div>
+    <div class="title-block">
+      <span class="doc-title"
+        ><i class="title-dot" aria-hidden="true"></i>{{ doc().titleCase }}</span
+      >
+      <span class="doc-number">
+        {{ doc().number }} ·
+        <span [attr.data-testid]="prefix() + '-status'">{{ doc().statusLabel }}</span>
+      </span>
+    </div>
+  </header>
+  <div class="minimal-meta">
+    <div class="recipient" [attr.data-testid]="prefix() + '-recipient'">
+      <span class="label">{{ doc().party.preparedHeading }}</span>
+      <ng-container *ngTemplateOutlet="recipientBlock" />
+    </div>
+    @for (row of doc().details; track row.label) {
+    <div class="meta-cell">
+      <span class="label">{{ row.label }}</span>
+      <span class="meta-value">{{ row.value }}</span>
+    </div>
+    }
+  </div>
+  <ng-container *ngTemplateOutlet="itemsTable" />
+  <div class="totals">
+    <ng-container *ngTemplateOutlet="totalRows" />
+    <div class="totals-grand">
+      <span>Total</span>
+      <strong [attr.data-testid]="prefix() + '-grand-total'">{{ doc().grandTotal }}</strong>
+    </div>
+  </div>
+  <ng-container *ngTemplateOutlet="sections" />
+  <ng-container *ngTemplateOutlet="signature" />
+  }
+
+  <!-- ============================================================ Elegant -->
+  @case ('elegant') {
+  <header class="elegant-head">
+    <ng-container *ngTemplateOutlet="logo" />
+    <strong class="company-name">{{ doc().company.name }}</strong>
+    @if (companyLines().length) {
+    <span class="company-details">{{ companyLines().join(' · ') }}</span>
+    }
+    <span class="double-rule" aria-hidden="true"></span>
+    <strong class="doc-title">{{ doc().title }}</strong>
+    <span class="doc-number">
+      No. {{ doc().number }} —
+      <span [attr.data-testid]="prefix() + '-status'">{{ doc().statusLabel.toLowerCase() }}</span>
+    </span>
+  </header>
+  <div class="parties">
+    <div class="recipient" [attr.data-testid]="prefix() + '-recipient'">
+      <span class="label">{{ doc().party.preparedHeading }}</span>
+      <ng-container *ngTemplateOutlet="recipientBlock" />
+    </div>
+    <dl class="dates">
+      @for (row of doc().details; track row.label) {
+      <div>
+        <dt>{{ row.label }}</dt>
+        <dd>{{ row.value }}</dd>
+      </div>
+      }
+    </dl>
+  </div>
+  <ng-container *ngTemplateOutlet="itemsTable" />
+  <div class="totals">
+    <ng-container *ngTemplateOutlet="totalRows" />
+    <div class="totals-grand">
+      <span>Total</span>
+      <strong [attr.data-testid]="prefix() + '-grand-total'">{{ doc().grandTotal }}</strong>
+    </div>
+  </div>
+  <ng-container *ngTemplateOutlet="sections" />
+  <ng-container *ngTemplateOutlet="signature" />
+  }
+
+  <!-- ============================================================ Bold -->
+  @case ('bold') {
+  <aside class="bold-side">
+    @if (doc().company.logoDataUrl) {
+    <span class="logo-tile"><ng-container *ngTemplateOutlet="logo" /></span>
+    }
+    <strong class="company-name">{{ doc().company.name }}</strong>
+    <div class="company-details">
+      <ng-container *ngTemplateOutlet="companyDetails" />
+    </div>
+    <div class="recipient side-group" [attr.data-testid]="prefix() + '-recipient'">
+      <span class="label">{{ doc().party.heading }}</span>
+      <ng-container *ngTemplateOutlet="recipientBlock" />
+    </div>
+    @for (row of doc().details; track row.label) {
+    <div class="side-group">
+      <span class="label">{{ row.label }}</span>
+      <strong>{{ row.value }}</strong>
+    </div>
+    }
+  </aside>
+  <div class="bold-main">
+    <strong class="doc-title">{{ doc().title }}</strong>
+    <span class="title-bar" aria-hidden="true"></span>
+    <span class="doc-number">{{ doc().number }}</span>
+    <span class="doc-status" [attr.data-testid]="prefix() + '-status'"
+      >{{ doc().statusLabel }}</span
+    >
+    <ng-container *ngTemplateOutlet="itemsTable" />
+    <div class="totals">
+      <ng-container *ngTemplateOutlet="totalRows" />
+      <div class="totals-grand">
+        <span>Total</span>
+        <strong [attr.data-testid]="prefix() + '-grand-total'">{{ doc().grandTotal }}</strong>
+      </div>
+    </div>
+    <ng-container *ngTemplateOutlet="sections" />
+    <ng-container *ngTemplateOutlet="signature" />
+  </div>
+  } }
+</article>

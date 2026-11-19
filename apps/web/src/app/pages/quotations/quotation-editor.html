@@ -1,0 +1,446 @@
+<section class="ui-page">
+  <header class="ui-page-head generator-head">
+    <div>
+      <a class="back-link" routerLink="/quotations">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M20 12H4M10 6l-6 6 6 6" />
+        </svg>
+        My quotations
+      </a>
+      <p class="ui-eyebrow">Quotation</p>
+      <h1>{{ title() }}</h1>
+      <p class="ui-sub">{{ subtitle() }}</p>
+    </div>
+    <span class="document-pill">{{ number() || 'New quotation' }}</span>
+  </header>
+
+  @if (saveError()) {
+  <div class="ui-alert" role="alert">
+    <span>{{ saveError() }}</span>
+    <button class="ui-link" type="button" (click)="saveError.set('')">Close</button>
+  </div>
+  } @if (companyMissing()) {
+  <div class="ui-alert" role="status">
+    <span>
+      <strong>Add your company details first.</strong> A quotation needs a seller name and address.
+    </span>
+    <a class="ui-link" routerLink="/company">Open company profile</a>
+  </div>
+  }
+
+  <form class="generator-grid" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <div class="form-stack">
+      @if (revising()) {
+      <section class="ui-card form-card revision-card" data-testid="revision-reason-card">
+        <header class="form-card-head">
+          <div>
+            <h2>Reason for this revision</h2>
+            <p>Recorded with version {{ nextRevision() }} and shown in the document's history.</p>
+          </div>
+          <span class="step-mark" aria-hidden="true">v{{ nextRevision() }}</span>
+        </header>
+        <div class="form-body">
+          <label class="ui-field">
+            <span>What was wrong?</span>
+            <textarea
+              class="ui-textarea"
+              rows="2"
+              formControlName="revisionReason"
+              placeholder="Wrong unit price on line 2"
+            ></textarea>
+            @if (form.controls.revisionReason.touched &&
+            form.controls.revisionReason.value.trim().length < 3) {
+            <small class="ui-field-error">Describe what was wrong (at least 3 characters).</small>
+            }
+          </label>
+        </div>
+      </section>
+      }
+      <section class="ui-card form-card">
+        <header class="form-card-head">
+          <div>
+            <h2>Quotation details</h2>
+            <p>Number, date, validity and your customer's reference.</p>
+          </div>
+          <span class="step-mark" aria-hidden="true">01</span>
+        </header>
+        <div class="form-body form-grid form-grid-2">
+          <label class="ui-field">
+            <span>Quotation number</span>
+            <input class="ui-input" [value]="number()" placeholder="Generated on save" readonly />
+          </label>
+          <label class="ui-field">
+            <span>Customer reference (optional)</span>
+            <input
+              class="ui-input"
+              formControlName="referenceNumber"
+              placeholder="RFQ or PO number"
+            />
+          </label>
+          <label class="ui-field">
+            <span>Quotation date</span>
+            <input class="ui-input" type="date" formControlName="issueDate" />
+          </label>
+          <label class="ui-field">
+            <span>Valid until</span>
+            <input class="ui-input" type="date" formControlName="validUntil" />
+          </label>
+        </div>
+      </section>
+
+      <section class="ui-card form-card">
+        <header class="form-card-head">
+          <div>
+            <h2>Recipient</h2>
+            <p>Who the quotation is addressed to, and the person to attention it to.</p>
+          </div>
+          <span class="step-mark" aria-hidden="true">02</span>
+        </header>
+
+        <div class="form-body form-grid form-grid-2">
+          <label class="ui-field form-span-2">
+            <span>Saved customer</span>
+            <select
+              class="ui-select"
+              formControlName="customerId"
+              (change)="onCustomerChange($event)"
+            >
+              <option value="">Choose a saved customer (optional)</option>
+              @for (customer of customers(); track customer.id) {
+              <option [value]="customer.id">{{ customerLabel(customer) }}</option>
+              }
+            </select>
+            <small class="field-hint">
+              Pick a customer to fill in the details below, or type a new recipient — it is saved to
+              your customers.
+            </small>
+          </label>
+
+          <label class="ui-field">
+            <span>Recipient name</span>
+            <input
+              class="ui-input"
+              formControlName="recipientName"
+              placeholder="Company or person name"
+            />
+            @if (form.controls.recipientName.invalid && form.controls.recipientName.touched) {
+            <small class="ui-field-error"
+              >Recipient name is required (at least 2 characters).</small
+            >
+            }
+          </label>
+          <label class="ui-field">
+            <span>Recipient email</span>
+            <input
+              class="ui-input"
+              type="email"
+              formControlName="recipientEmail"
+              placeholder="procurement@company.com"
+            />
+            @if (form.controls.recipientEmail.invalid && form.controls.recipientEmail.touched) {
+            <small class="ui-field-error">Enter a valid email address.</small>
+            }
+          </label>
+          <label class="ui-field">
+            <span>Recipient phone</span>
+            <input
+              class="ui-input"
+              formControlName="recipientPhone"
+              placeholder="+62 812 3456 7890"
+            />
+          </label>
+          <label class="ui-field">
+            <span>Recipient address</span>
+            <input class="ui-input" formControlName="recipientAddress" placeholder="Address" />
+          </label>
+
+          <div class="attention-block form-span-2">
+            @if (contacts().length) {
+            <label class="ui-field">
+              <span>Saved PIC</span>
+              <select
+                class="ui-select"
+                formControlName="contactId"
+                (change)="onContactChange($event)"
+              >
+                <option value="">Type a name instead</option>
+                @for (contact of contacts(); track contact.id) {
+                <option [value]="contact.id">{{ contactLabel(contact) }}</option>
+                }
+              </select>
+            </label>
+            }
+            <div class="form-grid form-grid-2">
+              <label class="ui-field">
+                <span>Attention (Attn.)</span>
+                <input
+                  class="ui-input"
+                  formControlName="attentionName"
+                  placeholder="Person receiving the offer"
+                  [readonly]="!!form.controls.contactId.value"
+                />
+              </label>
+              <label class="ui-field">
+                <span>Attention title</span>
+                <input
+                  class="ui-input"
+                  formControlName="attentionTitle"
+                  placeholder="Procurement manager"
+                  [readonly]="!!form.controls.contactId.value"
+                />
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="ui-card form-card items-card">
+        <header class="form-card-head">
+          <div>
+            <h2>Items</h2>
+            <p>The products or services you are offering, with quantity and price.</p>
+          </div>
+          <span class="step-mark" aria-hidden="true">03</span>
+        </header>
+
+        <div class="items-body">
+          <div class="catalog-picker">
+            <label class="ui-field">
+              <span>Add from items</span>
+              <select class="ui-select" (change)="addFromCatalog($event)">
+                <option value="">Choose a saved item…</option>
+                @for (item of catalogItems(); track item.id) {
+                <option [value]="item.id">{{ itemLabel(item) }}</option>
+                }
+              </select>
+            </label>
+            <p class="catalog-hint">
+              @if (catalogItems().length) { Picking an item adds a line with its name, unit and
+              price. } @else { No active items yet.
+              <a routerLink="/items">Add items to master data</a> to reuse them here. }
+            </p>
+          </div>
+
+          <div class="items-head quote-items" aria-hidden="true">
+            <span>Description</span>
+            <span>Qty</span>
+            <span>Unit</span>
+            <span>Unit price</span>
+            <span>Tax</span>
+            <span>Amount</span>
+            <span></span>
+          </div>
+
+          <datalist id="quotation-units">
+            @for (unit of units(); track unit.id) {
+            <option [value]="unit.name"></option>
+            }
+          </datalist>
+
+          <div formArrayName="items" class="items-list">
+            @for (item of items.controls; track item; let i = $index) {
+            <div class="item-row quote-items" [formGroupName]="i" data-testid="quotation-item">
+              <label class="ui-field item-description">
+                <span class="mobile-label">Description</span>
+                <input
+                  class="ui-input"
+                  formControlName="description"
+                  placeholder="Item description"
+                  [attr.aria-label]="'Item ' + (i + 1) + ' description'"
+                />
+                @if (item.get('description')?.invalid && item.get('description')?.touched) {
+                <small class="ui-field-error">Description is required.</small>
+                }
+              </label>
+              <label class="ui-field">
+                <span class="mobile-label">Qty</span>
+                <input
+                  class="ui-input"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  formControlName="quantity"
+                  [attr.aria-label]="'Item ' + (i + 1) + ' quantity'"
+                />
+              </label>
+              <label class="ui-field">
+                <span class="mobile-label">Unit</span>
+                <input
+                  class="ui-input"
+                  formControlName="unit"
+                  list="quotation-units"
+                  [attr.aria-label]="'Item ' + (i + 1) + ' unit'"
+                />
+              </label>
+              <label class="ui-field">
+                <span class="mobile-label">Unit price</span>
+                <input
+                  class="ui-input"
+                  type="text"
+                  inputmode="decimal"
+                  autocomplete="off"
+                  appCurrency
+                  formControlName="unitPrice"
+                  [attr.aria-label]="'Item ' + (i + 1) + ' unit price'"
+                />
+              </label>
+              <label class="ui-field">
+                <span class="mobile-label">Tax %</span>
+                <input
+                  class="ui-input"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  formControlName="taxRate"
+                  [attr.aria-label]="'Item ' + (i + 1) + ' tax rate'"
+                />
+              </label>
+              <span class="line-total">{{ formatIdr(lineTotal(i)) }}</span>
+              <button
+                class="remove-item"
+                type="button"
+                [attr.aria-label]="'Remove item ' + (i + 1)"
+                [disabled]="items.length === 1"
+                (click)="removeItem(i)"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"
+                  />
+                </svg>
+              </button>
+            </div>
+            }
+          </div>
+
+          <button class="add-item" type="button" (click)="addItem()">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Add item
+          </button>
+        </div>
+      </section>
+
+      <section class="ui-card form-card">
+        <header class="form-card-head">
+          <div>
+            <h2>Notes & terms</h2>
+            <p>Scope notes, payment terms and anything the offer depends on.</p>
+          </div>
+          <span class="step-mark" aria-hidden="true">04</span>
+        </header>
+        <div class="form-body form-grid">
+          <label class="ui-field">
+            <span>Notes for the recipient</span>
+            <textarea class="ui-textarea" formControlName="notes" rows="3"></textarea>
+          </label>
+          <label class="ui-field">
+            <span>Terms & conditions</span>
+            <textarea class="ui-textarea" formControlName="terms" rows="3"></textarea>
+          </label>
+        </div>
+      </section>
+
+      <section class="ui-card form-card">
+        <header class="form-card-head">
+          <div>
+            <h2>Signature</h2>
+            <p>Printed at the bottom right of the quotation, above the signer's name.</p>
+          </div>
+          <span class="step-mark" aria-hidden="true">05</span>
+        </header>
+        <div class="form-body signature-body">
+          <div class="form-grid signature-fields">
+            <label class="ui-field">
+              <span>Signer name</span>
+              <input class="ui-input" formControlName="signatureName" placeholder="Budi Santoso" />
+            </label>
+            <label class="ui-field">
+              <span>Signer title</span>
+              <input class="ui-input" formControlName="signatureTitle" placeholder="Director" />
+            </label>
+            <small class="field-hint">
+              Defaults to the signatory in your company profile. Draw the signature or upload a
+              scan; leave it empty to sign the printed copy by hand.
+            </small>
+          </div>
+          <app-signature-pad formControlName="signatureImage" label="Quotation signature" />
+        </div>
+      </section>
+    </div>
+
+    <aside class="summary-column">
+      <section class="ui-card summary">
+        <header class="summary-head">
+          <h2>Summary</h2>
+          <span class="summary-type">Quotation</span>
+        </header>
+        <div class="summary-body">
+          <div class="summary-row">
+            <span>Subtotal</span><strong>{{ formatIdr(totals().subtotal) }}</strong>
+          </div>
+          <div class="summary-row">
+            <span>Tax</span><strong>{{ formatIdr(totals().tax) }}</strong>
+          </div>
+          <div class="summary-row summary-total">
+            <span>Total</span>
+            <strong data-testid="quotation-total">{{ formatIdr(totals().total) }}</strong>
+          </div>
+          <p class="summary-hint">
+            Saving stores the quotation in My quotations. The server recalculates every total.
+          </p>
+          <button
+            class="ui-btn ui-btn-primary summary-submit"
+            type="submit"
+            [disabled]="saving() || companyMissing()"
+          >
+            {{ saving() ? 'Saving…' : revising() ? 'Save as version ' + nextRevision() : editingId()
+            ? 'Save changes' : 'Save quotation' }}
+          </button>
+          <a class="ui-btn ui-btn-ghost summary-cancel" routerLink="/quotations">Cancel</a>
+        </div>
+      </section>
+
+      @if (template(); as applied) {
+      <app-template-summary
+        [template]="applied"
+        changeLink="/templates/quotations"
+        followText="Applied automatically to this quotation and its PDF"
+        lockedText="Kept from when this quotation was sent"
+        testId="editor-template"
+      />
+      }
+
+      <section class="ui-card summary-note">
+        <span class="summary-note-mark" aria-hidden="true">i</span>
+        <p>
+          The quotation number is generated for your company. The PDF is an A4 portrait page in your
+          quotation template, with your signature in the bottom-right corner.
+        </p>
+      </section>
+    </aside>
+  </form>
+</section>

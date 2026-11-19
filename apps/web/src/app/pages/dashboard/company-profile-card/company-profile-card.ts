@@ -1,8 +1,8 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { apiErrorMessage } from '../../../core/http-error';
-import { CompanyService, DEFAULT_COMPANY_LOGO } from '../../../core/company.service';
+import { Company, CompanyService, DEFAULT_COMPANY_LOGO } from '../../../core/company.service';
 
 const MAX_LOGO_BYTES = 1_000_000;
 const ALLOWED_LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
@@ -36,21 +36,25 @@ export class CompanyProfileCard {
       this.saveError.set('');
     });
 
-    void this.hydrate();
+    void this.companies.ensureLoaded();
+    // Follow the saved profile (e.g. completed in the welcome banner) unless the user is editing.
+    effect(() => {
+      const company = this.companies.company();
+      if (company && this.form.pristine) {
+        this.hydrate(company);
+      }
+    });
   }
 
-  private async hydrate(): Promise<void> {
-    const company = await this.companies.ensureLoaded();
-
-    if (!company) {
-      return;
-    }
-
-    this.form.patchValue({
-      companyName: company.legalName,
-      address: company.address ?? '',
-      phone: company.phone ?? '',
-    });
+  private hydrate(company: Company): void {
+    this.form.patchValue(
+      {
+        companyName: company.legalName,
+        address: company.address ?? '',
+        phone: company.phone ?? '',
+      },
+      { emitEvent: false },
+    );
     this.logoPreview.set(company.logoDataUrl);
   }
 
@@ -108,6 +112,7 @@ export class CompanyProfileCard {
         logoDataUrl: this.logoPreview() ?? undefined,
       });
       this.saved.set(true);
+      this.form.markAsPristine();
     } catch (error) {
       this.saveError.set(apiErrorMessage(error));
     } finally {

@@ -1,0 +1,19 @@
+.version-pill {
+  display: inline-block;
+  margin: -2px 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  background: var(--surface);
+  padding: 2px 9px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.revision-banner {
+  align-items: center;
+  justify-content: space-between;
+  border-color: #fcd34d;
+  background: #fffbeb;
+  color: #78350f;
+}

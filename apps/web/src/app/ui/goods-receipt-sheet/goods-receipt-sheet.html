@@ -1,0 +1,327 @@
+@if (design(); as custom) {
+<app-design-sheet
+  [page]="custom.page"
+  [elements]="custom.elements"
+  [context]="designContext()"
+  [stamp]="designStamp()"
+  [designId]="custom.id"
+  [testId]="testId()"
+/>
+} @else {
+<!-- Shared fragments; each layout arranges and styles them differently. -->
+<ng-template #logo>
+  @if (receipt().company.logoDataUrl) {
+  <img class="logo" [src]="receipt().company.logoDataUrl" alt="" />
+  }
+</ng-template>
+
+<ng-template #companyDetails>
+  @for (line of companyLines(); track line) {
+  <span>{{ line }}</span>
+  }
+</ng-template>
+
+<ng-template #supplier>
+  <strong class="party-name">{{ receipt().company.name }}</strong>
+  @for (line of supplierLines(); track line) {
+  <span class="party-line">{{ line }}</span>
+  }
+</ng-template>
+
+<ng-template #customer>
+  <strong class="party-name">{{ receipt().recipient.name }}</strong>
+  @for (line of customerLines(); track line) {
+  <span class="party-line">{{ line }}</span>
+  }
+</ng-template>
+
+<ng-template #refValue let-cell>
+  @if (cell.link) {
+  <a [routerLink]="cell.link">{{ cell.value }}</a>
+  } @else { {{ cell.value }} }
+</ng-template>
+
+<ng-template #referenceGrid>
+  <dl class="refs" data-testid="goods-receipt-references">
+    @for (cell of references(); track cell.label) {
+    <div class="ref">
+      <dt>{{ cell.label }}</dt>
+      <dd><ng-container *ngTemplateOutlet="refValue; context: { $implicit: cell }" /></dd>
+    </div>
+    }
+    <div class="ref ref-wide" [class.ref-rest]="locationRest()">
+      <dt>Receiving location</dt>
+      <dd>{{ location() }}</dd>
+    </div>
+  </dl>
+</ng-template>
+
+<ng-template #linesTable>
+  <table class="lines">
+    <thead>
+      <tr>
+        <th class="col-no">#</th>
+        <th>Description</th>
+        <th>Unit</th>
+        <th class="num">Ordered</th>
+        <th class="num">Received</th>
+        <th class="num">Rejected</th>
+        <th class="num">Accepted</th>
+        <th>Remarks</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (line of receipt().lines; track line.id; let i = $index) {
+      <tr data-testid="goods-receipt-sheet-line">
+        <td class="col-no">{{ i + 1 }}</td>
+        <td>
+          <strong>{{ line.name }}</strong>
+          @if (line.description) {
+          <span class="line-description">{{ line.description }}</span>
+          }
+        </td>
+        <td>{{ line.unit }}</td>
+        <td class="num">{{ formatQuantity(line.orderedQuantity) }}</td>
+        <td class="num">{{ formatQuantity(line.receivedQuantity) }}</td>
+        <td class="num">{{ formatQuantity(line.rejectedQuantity) }}</td>
+        <td class="num accepted">{{ formatQuantity(line.acceptedQuantity) }}</td>
+        <td class="remarks">{{ line.remarks }}</td>
+      </tr>
+      }
+    </tbody>
+    <tfoot>
+      <tr data-testid="goods-receipt-totals">
+        <td></td>
+        <td>Total</td>
+        <td></td>
+        <td class="num">{{ formatQuantity(receipt().totals.ordered) }}</td>
+        <td class="num">{{ formatQuantity(receipt().totals.received) }}</td>
+        <td class="num">{{ formatQuantity(receipt().totals.rejected) }}</td>
+        <td class="num accepted">{{ formatQuantity(receipt().totals.accepted) }}</td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+</ng-template>
+
+<ng-template #statement>
+  <section class="text-section">
+    <span class="section-label"><i class="section-marker"></i>Inspection</span>
+    <p>{{ inspection }}</p>
+  </section>
+  @if (receipt().notes) {
+  <section class="text-section">
+    <span class="section-label"><i class="section-marker"></i>Notes</span>
+    <p>{{ receipt().notes }}</p>
+  </section>
+  } @if (receipt().status === 'CANCELLED' && receipt().cancelReason) {
+  <section class="text-section is-void">
+    <span class="section-label"><i class="section-marker"></i>Cancelled</span>
+    <p>{{ receipt().cancelReason }}</p>
+  </section>
+  }
+</ng-template>
+
+<ng-template #signoffBlock>
+  <footer class="signoff" data-testid="goods-receipt-signoff">
+    @for (entry of signOff(); track entry.label) {
+    <section class="signoff-item">
+      <span class="signoff-label">{{ entry.label }}</span>
+      <span class="signoff-space" aria-hidden="true"></span>
+      <strong>{{ entry.name || '(name)' }}</strong>
+      <span class="signoff-caption">{{ entry.caption }}</span>
+      <span class="signoff-date">Date: ____________</span>
+    </section>
+    }
+  </footer>
+</ng-template>
+
+<article
+  [class]="'sheet grn layout-' + layout()"
+  [style]="themeStyle()"
+  [attr.data-testid]="testId()"
+  [attr.data-layout]="layout()"
+  [attr.data-accent]="accent()"
+  aria-label="Goods receipt note"
+>
+  @switch (layout()) {
+  <!-- ============================================================ Classic -->
+  @case ('classic') {
+  <header class="classic-head">
+    <div class="issuer">
+      <ng-container *ngTemplateOutlet="logo" />
+      <div class="issuer-text">
+        <strong class="company-name">{{ receipt().company.name }}</strong>
+        <ng-container *ngTemplateOutlet="companyDetails" />
+      </div>
+    </div>
+    <div class="title-block">
+      <strong class="doc-title">GOODS RECEIPT NOTE</strong>
+      <span class="doc-number">{{ number() }}</span>
+      <span [class]="statusClass()" data-testid="goods-receipt-status">{{ statusLabel() }}</span>
+    </div>
+  </header>
+  <div class="parties">
+    <section class="party">
+      <span class="party-label">Delivered by (supplier)</span>
+      <ng-container *ngTemplateOutlet="supplier" />
+    </section>
+    <section class="party" data-testid="goods-receipt-recipient">
+      <span class="party-label">Received by (customer)</span>
+      <ng-container *ngTemplateOutlet="customer" />
+    </section>
+  </div>
+  <ng-container *ngTemplateOutlet="referenceGrid" />
+  <ng-container *ngTemplateOutlet="linesTable" />
+  <ng-container *ngTemplateOutlet="statement" />
+  <ng-container *ngTemplateOutlet="signoffBlock" />
+  }
+
+  <!-- ============================================================ Modern -->
+  @case ('modern') {
+  <header class="modern-band">
+    <div class="issuer">
+      @if (receipt().company.logoDataUrl) {
+      <span class="logo-tile"><ng-container *ngTemplateOutlet="logo" /></span>
+      }
+      <div class="issuer-text">
+        <strong class="company-name">{{ receipt().company.name }}</strong>
+        <ng-container *ngTemplateOutlet="companyDetails" />
+      </div>
+    </div>
+    <div class="title-block">
+      <strong class="doc-title">GOODS RECEIPT NOTE</strong>
+      <span class="doc-number">{{ number() }}</span>
+      <span class="status-pill" data-testid="goods-receipt-status">{{ statusLabel() }}</span>
+    </div>
+  </header>
+  <div class="modern-body">
+    <div class="parties">
+      <section class="party">
+        <span class="party-label">Delivered by (supplier)</span>
+        <ng-container *ngTemplateOutlet="supplier" />
+      </section>
+      <section class="party" data-testid="goods-receipt-recipient">
+        <span class="party-label">Received by (customer)</span>
+        <ng-container *ngTemplateOutlet="customer" />
+      </section>
+    </div>
+    <ng-container *ngTemplateOutlet="referenceGrid" />
+    <ng-container *ngTemplateOutlet="linesTable" />
+    <ng-container *ngTemplateOutlet="statement" />
+    <ng-container *ngTemplateOutlet="signoffBlock" />
+  </div>
+  <span class="modern-strip" aria-hidden="true"></span>
+  }
+
+  <!-- ============================================================ Minimal -->
+  @case ('minimal') {
+  <header class="minimal-head">
+    <div class="issuer">
+      <ng-container *ngTemplateOutlet="logo" />
+      <div class="issuer-text">
+        <strong class="company-name">{{ receipt().company.name }}</strong>
+        <ng-container *ngTemplateOutlet="companyDetails" />
+      </div>
+    </div>
+    <div class="title-block">
+      <span class="doc-title"><i class="title-dot" aria-hidden="true"></i>Goods receipt</span>
+      <span class="doc-number">
+        {{ number() }} · <span data-testid="goods-receipt-status">{{ statusLabel() }}</span>
+      </span>
+    </div>
+  </header>
+  <div class="parties">
+    <section class="party">
+      <span class="party-label">Delivered by</span>
+      <ng-container *ngTemplateOutlet="supplier" />
+    </section>
+    <section class="party" data-testid="goods-receipt-recipient">
+      <span class="party-label">Received by</span>
+      <ng-container *ngTemplateOutlet="customer" />
+    </section>
+  </div>
+  <ng-container *ngTemplateOutlet="referenceGrid" />
+  <ng-container *ngTemplateOutlet="linesTable" />
+  <ng-container *ngTemplateOutlet="statement" />
+  <ng-container *ngTemplateOutlet="signoffBlock" />
+  }
+
+  <!-- ============================================================ Elegant -->
+  @case ('elegant') {
+  <header class="elegant-head">
+    <ng-container *ngTemplateOutlet="logo" />
+    <strong class="company-name">{{ receipt().company.name }}</strong>
+    @if (companyLines().length) {
+    <span class="company-details">{{ companyLines().join(' · ') }}</span>
+    }
+    <span class="double-rule" aria-hidden="true"></span>
+    <strong class="doc-title">GOODS RECEIPT NOTE</strong>
+    <span class="doc-number">
+      No. {{ number() }} —
+      <span data-testid="goods-receipt-status">{{ statusLabel().toLowerCase() }}</span>
+    </span>
+  </header>
+  <div class="parties">
+    <section class="party">
+      <span class="party-label">Delivered by the supplier</span>
+      <ng-container *ngTemplateOutlet="supplier" />
+    </section>
+    <section class="party" data-testid="goods-receipt-recipient">
+      <span class="party-label">Received by the customer</span>
+      <ng-container *ngTemplateOutlet="customer" />
+    </section>
+  </div>
+  <ng-container *ngTemplateOutlet="referenceGrid" />
+  <ng-container *ngTemplateOutlet="linesTable" />
+  <ng-container *ngTemplateOutlet="statement" />
+  <ng-container *ngTemplateOutlet="signoffBlock" />
+  }
+
+  <!-- ============================================================ Bold -->
+  @case ('bold') {
+  <aside class="bold-side">
+    @if (receipt().company.logoDataUrl) {
+    <span class="logo-tile"><ng-container *ngTemplateOutlet="logo" /></span>
+    }
+    <section class="side-group">
+      <span class="party-label">Delivered by</span>
+      <ng-container *ngTemplateOutlet="supplier" />
+    </section>
+    <section class="side-group" data-testid="goods-receipt-recipient">
+      <span class="party-label">Received by</span>
+      <ng-container *ngTemplateOutlet="customer" />
+    </section>
+    <dl class="side-refs" data-testid="goods-receipt-references">
+      @for (cell of sideReferences(); track cell.label) {
+      <div class="side-group">
+        <dt class="party-label">{{ cell.label }}</dt>
+        <dd><ng-container *ngTemplateOutlet="refValue; context: { $implicit: cell }" /></dd>
+      </div>
+      }
+    </dl>
+  </aside>
+  <div class="bold-main">
+    <strong class="doc-title">GOODS RECEIPT</strong>
+    <span class="title-bar" aria-hidden="true"></span>
+    <span class="doc-number">{{ number() }}</span>
+    <span class="doc-status" data-testid="goods-receipt-status">{{ statusLabel() }}</span>
+    <dl class="strip-refs">
+      @for (cell of stripReferences(); track cell.label) {
+      <div>
+        <dt>{{ cell.label }}</dt>
+        <dd>{{ cell.value }}</dd>
+      </div>
+      }
+      <div>
+        <dt>Receiving location</dt>
+        <dd>{{ location() }}</dd>
+      </div>
+    </dl>
+    <ng-container *ngTemplateOutlet="linesTable" />
+    <ng-container *ngTemplateOutlet="statement" />
+    <ng-container *ngTemplateOutlet="signoffBlock" />
+  </div>
+  } }
+</article>
+}

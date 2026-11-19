@@ -1,0 +1,73 @@
+<dialog
+  #dialog
+  class="termin-dialog"
+  [attr.aria-labelledby]="testId() + '-title'"
+  [attr.data-testid]="testId()"
+  (cancel)="cancel($event)"
+>
+  @if (open()) {
+  <form class="dialog-body" method="dialog" (submit)="$event.preventDefault(); confirm()">
+    <header class="dialog-head">
+      <div>
+        <h2 [id]="testId() + '-title'">{{ heading() }}</h2>
+        @if (intro()) {
+        <p>{{ intro() }}</p>
+        }
+      </div>
+      <button
+        type="button"
+        class="dialog-close"
+        aria-label="Close"
+        [disabled]="busy()"
+        (click)="cancel()"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          aria-hidden="true"
+        >
+          <path d="M6 6l12 12M18 6 6 18" />
+        </svg>
+      </button>
+    </header>
+
+    @if (sourceLabel()) {
+    <div class="dialog-source">
+      <span>{{ sourceLabel() }}</span>
+      <strong>{{ formatMoney(total(), currency()) }}</strong>
+    </div>
+    } @if (splitBlockedReason(); as reason) {
+    <p class="dialog-note" data-testid="termin-split-blocked">{{ reason }}</p>
+    } @else {
+    <app-termin-planner
+      [(draft)]="draft"
+      [total]="total()"
+      [currency]="currency()"
+      [noun]="noun()"
+      [nounPlural]="nounPlural()"
+      [allowSingle]="mode() === 'create'"
+      [showGenerate]="mode() === 'create'"
+      [locked]="locked()"
+    />
+    } @if (error()) {
+    <p class="dialog-error" role="alert">{{ error() }}</p>
+    }
+
+    <footer class="dialog-actions">
+      <button class="ui-btn ui-btn-ghost" type="button" [disabled]="busy()" (click)="cancel()">
+        Cancel
+      </button>
+      <button
+        class="ui-btn ui-btn-primary"
+        type="submit"
+        data-testid="termin-dialog-confirm"
+        [disabled]="busy() || !!problem()"
+      >
+        {{ busy() ? 'Saving…' : confirmLabel() }}
+      </button>
+    </footer>
+  </form>
+  }
+</dialog>

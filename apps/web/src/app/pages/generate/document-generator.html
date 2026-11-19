@@ -37,6 +37,28 @@
 
   <form class="generator-grid" [formGroup]="form" (ngSubmit)="submit()" novalidate>
     <div class="form-stack">
+      @if (revising()) {
+      <section class="ui-card form-card revision-card" data-testid="revision-reason-card">
+        <header class="form-card-head">
+          <div>
+            <h2>Reason for this revision</h2>
+            <p>Recorded with version {{ nextRevision() }} and shown in the invoice's history.</p>
+          </div>
+          <span class="step-mark" aria-hidden="true">v{{ nextRevision() }}</span>
+        </header>
+        <div class="form-body">
+          <label class="ui-field">
+            <span>What was wrong?</span>
+            <textarea
+              class="ui-textarea"
+              rows="2"
+              formControlName="revisionReason"
+              placeholder="Wrong quantity billed on line 1"
+            ></textarea>
+          </label>
+        </div>
+      </section>
+      }
       <section class="ui-card form-card">
         <header class="form-card-head">
           <div>
@@ -293,6 +315,27 @@
           </label>
         </div>
       </section>
+
+      @if (!editingId()) {
+      <section class="ui-card form-card" data-testid="invoice-termins-card">
+        <header class="form-card-head">
+          <div>
+            <h2>Payment</h2>
+            <p>Bill everything at once, or split the invoice into payment termins.</p>
+          </div>
+          <span class="step-mark" aria-hidden="true">05</span>
+        </header>
+        <div class="form-body">
+          <app-termin-planner
+            [(draft)]="termins"
+            [total]="totals().total"
+            currency="IDR"
+            noun="invoice"
+            nounPlural="invoices"
+          />
+        </div>
+      </section>
+      }
     </div>
 
     <aside class="summary-column">
@@ -312,25 +355,41 @@
             <span>Total</span>
             <strong>{{ formatIdr(totals().total) }}</strong>
           </div>
+          @if (!editingId() && termins().split) {
+          <div class="summary-row summary-termins" data-testid="summary-termins">
+            <span>{{ termins().percentages.length }} termins</span>
+            <strong>{{ formatPercentage(terminsTotal()) }} allocated</strong>
+          </div>
+          }
           <p class="summary-hint">
             Saving stores the invoice in My invoices. The server recalculates every total.
           </p>
           <button
             class="ui-btn ui-btn-primary summary-submit"
             type="submit"
-            [disabled]="saving() || companyMissing()"
+            [disabled]="saving() || companyMissing() || !!terminError()"
           >
-            {{ saving() ? 'Saving…' : config.submitLabel }}
+            {{ saving() ? 'Saving…' : submitLabel() }}
           </button>
           <a class="ui-btn ui-btn-ghost summary-cancel" routerLink="/documents">Cancel</a>
         </div>
       </section>
 
+      @if (template(); as applied) {
+      <app-template-summary
+        [template]="applied"
+        changeLink="/templates/invoices"
+        followText="Applied automatically to this invoice and its PDF"
+        lockedText="Kept from when this invoice was issued"
+        testId="invoice-editor-template"
+      />
+      }
+
       <section class="ui-card summary-note">
         <span class="summary-note-mark" aria-hidden="true">i</span>
         <p>
-          The invoice number is generated automatically for your company. A PDF copy is available
-          from My invoices.
+          The invoice number is generated automatically for your company. The PDF uses your invoice
+          template and is available from My invoices.
         </p>
       </section>
     </aside>

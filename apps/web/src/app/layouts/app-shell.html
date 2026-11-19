@@ -1,5 +1,10 @@
 <div class="app-shell">
-  <aside class="sidebar" [class.is-open]="navOpen()" id="primary-navigation">
+  <aside
+    class="sidebar"
+    [class.is-open]="navOpen()"
+    id="primary-navigation"
+    [attr.inert]="welcomeOpen() ? '' : null"
+  >
     <div class="sidebar-brand">
       <a class="brand" routerLink="/dashboard" (click)="closeNav()" aria-label="Rumindium Invoice">
         <span class="brand-mark" aria-hidden="true">
@@ -48,7 +53,7 @@
     </a>
 
     <nav class="nav" aria-label="Main navigation">
-      <span class="nav-label">Workspace</span>
+      <span class="nav-label" data-testid="nav-group-workspace">Workspace</span>
       <a
         class="nav-item"
         routerLink="/dashboard"
@@ -68,6 +73,47 @@
           <path d="M5 9v11h14V9M9 20v-6h6v6" />
         </svg>
         Dashboard
+      </a>
+      <a
+        class="nav-item"
+        routerLink="/quotations"
+        routerLinkActive="is-active"
+        (click)="closeNav()"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M7 3h7l4 4v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
+          <path d="M14 3v4h4M9 12h6M9 16h4" />
+        </svg>
+        My Quotations
+        <span class="nav-count">{{ quotationCount() }}</span>
+      </a>
+      <a
+        class="nav-item"
+        routerLink="/goods-receipts"
+        routerLinkActive="is-active"
+        (click)="closeNav()"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M3 8.5 12 4l9 4.5v9L12 22l-9-4.5v-9z" />
+          <path d="m3 8.5 9 4.5 9-4.5M12 13v9" />
+          <path d="m8.5 15.5 2 2 3.5-4" />
+        </svg>
+        My Goods Receipts
+        <span class="nav-count">{{ goodsReceiptCount() }}</span>
       </a>
       <a class="nav-item" routerLink="/documents" routerLinkActive="is-active" (click)="closeNav()">
         <svg
@@ -127,7 +173,88 @@
         Account
       </a>
 
-      <span class="nav-label nav-label-group">Master data</span>
+      <span class="nav-label nav-label-group" data-testid="nav-group-templates">Templates</span>
+      <a
+        class="nav-item"
+        routerLink="/templates/quotations"
+        routerLinkActive="is-active"
+        (click)="closeNav()"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <rect x="3.5" y="4" width="17" height="16" rx="2" />
+          <path d="M3.5 9h17M9.5 9v11" />
+        </svg>
+        Quotation Templates
+      </a>
+      <a
+        class="nav-item"
+        routerLink="/templates/goods-receipts"
+        routerLinkActive="is-active"
+        (click)="closeNav()"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <rect x="5" y="4" width="14" height="17" rx="2" />
+          <path d="M9 4V3h6v1M8.5 10h7M8.5 14h4.5" />
+        </svg>
+        Goods Receipt Templates
+      </a>
+      <a
+        class="nav-item"
+        routerLink="/templates/invoices"
+        routerLinkActive="is-active"
+        (click)="closeNav()"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z" />
+          <path d="M9 8h6M9 12h6" />
+        </svg>
+        Invoice Templates
+      </a>
+      <a
+        class="nav-item"
+        routerLink="/templates/builder"
+        routerLinkActive="is-active"
+        data-testid="nav-template-builder"
+        (click)="closeNav()"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <rect x="3.5" y="3.5" width="17" height="17" rx="2.5" />
+          <path d="M3.5 8.5h17M8.5 8.5v12" />
+          <path d="m12.5 16.5 3.8-3.8a1.2 1.2 0 0 1 1.7 1.7l-3.8 3.8-2.2.5z" />
+        </svg>
+        Template Builder
+        <span class="nav-new">New</span>
+      </a>
+
+      <span class="nav-label nav-label-group" data-testid="nav-group-master-data">Master data</span>
       <a class="nav-item" routerLink="/customers" routerLinkActive="is-active" (click)="closeNav()">
         <svg
           viewBox="0 0 24 24"
@@ -160,6 +287,29 @@
     </nav>
 
     <div class="sidebar-bottom">
+      <a
+        class="nav-item nav-feedback"
+        routerLink="/feedback"
+        routerLinkActive="is-active"
+        (click)="closeNav()"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path
+            d="M5 5h14a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-8l-4 3.5V17H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"
+          />
+          <path d="M8.5 9.5h7M8.5 12.5h4.5" />
+        </svg>
+        Feedback
+        <span class="nav-count" title="Open feedback">{{ openFeedbackCount() }}</span>
+      </a>
+
       <div class="workspace-chip">
         <span class="workspace-icon" aria-hidden="true">{{ initials().slice(0, 1) }}</span>
         <div>
@@ -205,7 +355,7 @@
   ></button>
   }
 
-  <div class="shell-main">
+  <div class="shell-main" [attr.inert]="welcomeOpen() ? '' : null">
     <header class="topbar">
       <button
         class="icon-button topbar-menu"
@@ -250,4 +400,8 @@
       <router-outlet />
     </main>
   </div>
+
+  @if (welcomeOpen()) {
+  <app-welcome-banner (finished)="welcomeFinished()" />
+  }
 </div>

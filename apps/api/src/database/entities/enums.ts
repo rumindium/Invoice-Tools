@@ -13,6 +13,7 @@ export enum DocumentType {
   RECEIPT = 'RECEIPT',
   CREDIT_NOTE = 'CREDIT_NOTE',
   DEBIT_NOTE = 'DEBIT_NOTE',
+  GOODS_RECEIPT = 'GOODS_RECEIPT',
 }
 
 export enum DocumentStatus {
@@ -32,6 +33,7 @@ export enum DocumentStatus {
   VOID = 'VOID',
   PARTIALLY_DELIVERED = 'PARTIALLY_DELIVERED',
   DELIVERED = 'DELIVERED',
+  RECEIVED = 'RECEIVED',
 }
 
 export enum TaxMode {

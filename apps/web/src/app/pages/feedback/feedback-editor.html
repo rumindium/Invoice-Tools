@@ -1,0 +1,242 @@
+<section class="ui-page">
+  <header class="ui-page-head generator-head">
+    <div>
+      <a class="back-link" routerLink="/feedback">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M20 12H4M10 6l-6 6 6 6" />
+        </svg>
+        Feedback
+      </a>
+      <p class="ui-eyebrow">Customer voice</p>
+      <h1>{{ editingId() ? 'Edit feedback' : 'Log feedback' }}</h1>
+      <p class="ui-sub">
+        Write down what the customer told you, where, and how they felt about it.
+      </p>
+    </div>
+  </header>
+
+  @if (saveError()) {
+  <div class="ui-alert" role="alert">
+    <span>{{ saveError() }}</span>
+    <button class="ui-link" type="button" (click)="saveError.set('')">Close</button>
+  </div>
+  }
+
+  <form class="generator-grid" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <div class="form-stack">
+      <section class="ui-card form-card">
+        <header class="form-card-head">
+          <div>
+            <h2>Customer</h2>
+            <p>A saved customer, or anyone who is not in your customer list yet.</p>
+          </div>
+          <span class="step-mark" aria-hidden="true">01</span>
+        </header>
+        <div class="form-body form-grid form-grid-2">
+          <label class="ui-field form-span-2">
+            <span>Saved customer</span>
+            <select
+              class="ui-select"
+              formControlName="customerId"
+              (change)="onCustomerChange($event)"
+            >
+              <option value="">Not in my customer list</option>
+              @for (customer of customers(); track customer.id) {
+              <option [value]="customer.id">{{ customerLabel(customer) }}</option>
+              }
+            </select>
+          </label>
+          <label class="ui-field">
+            <span>Customer name</span>
+            <input
+              class="ui-input"
+              formControlName="customerName"
+              placeholder="Company or person"
+            />
+            @if (form.controls.customerName.invalid && form.controls.customerName.touched) {
+            <small class="ui-field-error">Customer name is required.</small>
+            }
+          </label>
+          <div class="contact-field">
+            <label class="ui-field">
+              <span>Contact person (optional)</span>
+              <input
+                class="ui-input"
+                formControlName="contactName"
+                placeholder="Who gave the feedback"
+              />
+            </label>
+            @if (contacts().length) {
+            <select
+              class="ui-select contact-pick"
+              aria-label="Pick a saved PIC"
+              (change)="chooseContact($event)"
+            >
+              <option value="">Pick a saved PIC…</option>
+              @for (contact of contacts(); track contact.id) {
+              <option [value]="contact.name">
+                {{ contact.name }}{{ contact.jobTitle ? ' — ' + contact.jobTitle : '' }}
+              </option>
+              }
+            </select>
+            }
+          </div>
+        </div>
+      </section>
+
+      <section class="ui-card form-card">
+        <header class="form-card-head">
+          <div>
+            <h2>Source</h2>
+            <p>The channel the feedback came through, and when.</p>
+          </div>
+          <span class="step-mark" aria-hidden="true">02</span>
+        </header>
+        <div class="form-body form-grid">
+          <div class="source-picker" role="radiogroup" aria-label="Source">
+            @for (item of sources; track item) {
+            <button
+              type="button"
+              role="radio"
+              class="source-option"
+              [class.is-active]="form.controls.source.value === item"
+              [attr.aria-checked]="form.controls.source.value === item"
+              (click)="chooseSource(item)"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path [attr.d]="sourceIcon[item]" />
+              </svg>
+              {{ sourceLabel[item] }}
+            </button>
+            }
+          </div>
+          @if (form.controls.source.value === 'OTHER') {
+          <label class="ui-field">
+            <span>Which channel?</span>
+            <input
+              class="ui-input"
+              formControlName="sourceDetail"
+              placeholder="Tokopedia review, Instagram DM, trade fair…"
+            />
+          </label>
+          }
+          <div class="form-grid form-grid-2">
+            <label class="ui-field">
+              <span>Received on</span>
+              <input class="ui-input" type="date" formControlName="receivedOn" [max]="maxDate" />
+            </label>
+            <label class="ui-field">
+              <span>Evidence (optional)</span>
+              <input
+                class="ui-input"
+                formControlName="evidence"
+                placeholder="Link to the email, chat screenshot or call note"
+              />
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section class="ui-card form-card">
+        <header class="form-card-head">
+          <div>
+            <h2>Feedback</h2>
+            <p>What kind of feedback it is, how they rated you, and what they said.</p>
+          </div>
+          <span class="step-mark" aria-hidden="true">03</span>
+        </header>
+        <div class="form-body form-grid">
+          <div class="form-grid form-grid-2">
+            <label class="ui-field">
+              <span>Category</span>
+              <select class="ui-select" formControlName="category">
+                @for (item of categories; track item) {
+                <option [value]="item">{{ categoryLabel[item] }}</option>
+                }
+              </select>
+            </label>
+            <div class="ui-field">
+              <span>Rating (optional)</span>
+              <app-star-rating formControlName="rating" />
+            </div>
+          </div>
+          <label class="ui-field">
+            <span>Subject</span>
+            <input
+              class="ui-input"
+              formControlName="subject"
+              placeholder="Happy with the new logo"
+            />
+            @if (form.controls.subject.invalid && form.controls.subject.touched) {
+            <small class="ui-field-error">Add a short subject (at least 3 characters).</small>
+            }
+          </label>
+          <label class="ui-field">
+            <span>What the customer said</span>
+            <textarea
+              class="ui-textarea"
+              rows="5"
+              formControlName="message"
+              placeholder="Their words, as close as possible"
+            ></textarea>
+            @if (form.controls.message.invalid && form.controls.message.touched) {
+            <small class="ui-field-error">Write down what the customer said.</small>
+            }
+          </label>
+          <label class="ui-field">
+            <span>Related document (optional)</span>
+            <select class="ui-select" formControlName="relatedDocumentId">
+              <option value="">Not about a specific document</option>
+              @for (document of documents(); track document.id) {
+              <option [value]="document.id">{{ documentLabel(document) }}</option>
+              }
+            </select>
+            <small class="field-hint">
+              Quotations, goods receipts and invoices{{ documentScope() }}.
+            </small>
+          </label>
+        </div>
+      </section>
+    </div>
+
+    <aside class="summary-column">
+      <section class="ui-card summary">
+        <header class="summary-head">
+          <h2>Summary</h2>
+          <span class="summary-type">Feedback</span>
+        </header>
+        <div class="summary-body">
+          <div class="summary-row">
+            <span>Customer</span><strong>{{ form.controls.customerName.value || '—' }}</strong>
+          </div>
+          <div class="summary-row">
+            <span>Source</span><strong>{{ sourceLabel[form.controls.source.value] }}</strong>
+          </div>
+          <div class="summary-row">
+            <span>Category</span><strong>{{ categoryLabel[form.controls.category.value] }}</strong>
+          </div>
+          <p class="summary-hint">New feedback starts as "New". Resolve it from its page.</p>
+          <button class="ui-btn ui-btn-primary summary-submit" type="submit" [disabled]="saving()">
+            {{ saving() ? 'Saving…' : editingId() ? 'Save changes' : 'Save feedback' }}
+          </button>
+          <a class="ui-btn ui-btn-ghost summary-cancel" routerLink="/feedback">Cancel</a>
+        </div>
+      </section>
+    </aside>
+  </form>
+</section>

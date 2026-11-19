@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { terminShortLabel } from '../../core/termin.service';
 import { formatDate, formatMoney } from '../../core/format';
 import { apiErrorMessage } from '../../core/http-error';
 import {
@@ -30,6 +31,7 @@ export class DocumentsPage {
   protected readonly actionError = signal('');
 
   protected readonly formatDate = formatDate;
+  protected readonly terminShortLabel = terminShortLabel;
   protected readonly formatMoney = formatMoney;
   protected readonly statusLabel = STATUS_LABEL;
   protected readonly statusClass = statusClass;

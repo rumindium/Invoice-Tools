@@ -1,0 +1,262 @@
+<section class="ui-page templates-page" [attr.data-document-type]="documentType()">
+  <header class="ui-page-head">
+    <div>
+      <p class="ui-eyebrow">{{ copy().eyebrow }}</p>
+      <h1>{{ copy().heading }}</h1>
+      <p class="ui-sub">{{ copy().intro }}</p>
+    </div>
+    @if (active(); as current) {
+    <div class="active-summary" data-testid="active-template">
+      <span
+        class="active-swatch"
+        [style.background]="current.accentColor"
+        aria-hidden="true"
+      ></span>
+      <div>
+        <span>Applied template</span>
+        <strong
+          >{{ current.name }} · {{ current.key === 'custom' ? 'Template Builder' :
+          current.accentColor }}</strong
+        >
+      </div>
+    </div>
+    }
+  </header>
+
+  @if (loading()) {
+  <div class="ui-card ui-empty"><strong>Loading templates…</strong></div>
+  } @else if (companyMissing()) {
+  <div class="ui-card ui-empty" data-testid="templates-company-missing">
+    <strong>Add your company details first</strong>
+    <p>Templates use your company name, logo and address as the letterhead.</p>
+    <a class="ui-btn ui-btn-primary" routerLink="/company">Open company profile</a>
+  </div>
+  } @else if (loadError()) {
+  <div class="ui-alert" role="alert">{{ loadError() }}</div>
+  } @else { @if (actionError()) {
+  <div class="ui-alert" role="alert">
+    <span>{{ actionError() }}</span>
+    <button class="ui-link" type="button" (click)="actionError.set('')">Close</button>
+  </div>
+  } @if (notice()) {
+  <div class="ui-alert ui-alert-success" role="status" data-testid="template-notice">
+    <span>{{ notice() }}</span>
+    <a class="ui-link" [routerLink]="copy().createLink">{{ copy().createLabel }}</a>
+  </div>
+  }
+
+  <app-custom-designs
+    [documentType]="documentType()"
+    [activeDesignId]="active()?.design?.id ?? null"
+    (applied)="designApplied($event)"
+  />
+
+  <h2 class="gallery-heading">Built-in layouts</h2>
+  <div class="gallery" role="radiogroup" [attr.aria-label]="copy().heading">
+    @for (template of templates(); track template.key) {
+    <button
+      class="template-card"
+      type="button"
+      role="radio"
+      [class.is-selected]="template.key === selectedKey()"
+      [attr.aria-checked]="template.key === selectedKey()"
+      [attr.data-testid]="'template-card-' + template.key"
+      (click)="select(template.key)"
+    >
+      <span class="thumb" aria-hidden="true">
+        @if (documentType() === 'goods-receipt') {
+        <app-goods-receipt-sheet
+          class="thumb-sheet"
+          [receipt]="sampleReceipt()"
+          [templateKey]="template.key"
+          [accentColor]="colorFor(template)"
+          [linkSource]="false"
+          testId="template-thumbnail"
+        />
+        } @else if (documentType() === 'invoice') {
+        <app-invoice-sheet
+          class="thumb-sheet"
+          [invoice]="sampleInvoice()"
+          [templateKey]="template.key"
+          [accentColor]="colorFor(template)"
+          testId="template-thumbnail"
+        />
+        } @else {
+        <app-quotation-sheet
+          class="thumb-sheet"
+          [quotation]="sampleQuotation()"
+          [templateKey]="template.key"
+          [accentColor]="colorFor(template)"
+          testId="template-thumbnail"
+        />
+        }
+      </span>
+      <span class="card-body">
+        <span class="card-title">
+          <strong>{{ template.name }}</strong>
+          @if (template.active) {
+          <span class="ui-badge ui-badge-green" data-testid="template-active-badge">Applied</span>
+          }
+        </span>
+        <span class="card-tagline">{{ template.tagline }}</span>
+      </span>
+    </button>
+    }
+  </div>
+
+  <div class="workbench">
+    <div class="preview-column">
+      <div class="preview-head">
+        <span class="preview-format">Live preview · A4 portrait</span>
+        <span class="preview-hint">Sample data with your company letterhead</span>
+      </div>
+      @if (documentType() === 'goods-receipt') {
+      <app-goods-receipt-sheet
+        [receipt]="sampleReceipt()"
+        [templateKey]="selectedKey()"
+        [accentColor]="selectedColor()"
+        [linkSource]="false"
+        testId="template-preview"
+      />
+      } @else if (documentType() === 'invoice') {
+      <app-invoice-sheet
+        [invoice]="sampleInvoice()"
+        [templateKey]="selectedKey()"
+        [accentColor]="selectedColor()"
+        testId="template-preview"
+      />
+      } @else {
+      <app-quotation-sheet
+        [quotation]="sampleQuotation()"
+        [templateKey]="selectedKey()"
+        [accentColor]="selectedColor()"
+        testId="template-preview"
+      />
+      }
+    </div>
+
+    <aside class="side-column">
+      @if (selected(); as template) {
+      <section class="ui-card customiser" data-testid="template-customiser">
+        <header class="customiser-head">
+          <div>
+            <span class="ui-eyebrow">{{ template.tagline }}</span>
+            <h2 data-testid="selected-template-name">{{ template.name }}</h2>
+          </div>
+          @if (template.active && !dirty()) {
+          <span class="ui-badge ui-badge-green">Applied</span>
+          } @else if (dirty()) {
+          <span class="ui-badge ui-badge-amber" data-testid="template-unsaved"
+            >Not applied yet</span
+          >
+          }
+        </header>
+
+        <p class="customiser-description">{{ template.description }}</p>
+        <ul class="highlights">
+          @for (highlight of template.highlights; track highlight) {
+          <li>{{ highlight }}</li>
+          }
+        </ul>
+
+        <div class="color-section">
+          <div class="color-head">
+            <h3 id="color-theme-heading">Colour theme</h3>
+            <button
+              class="ui-link"
+              type="button"
+              [disabled]="selectedColor() === template.defaultColor"
+              (click)="resetColor()"
+            >
+              Reset to default
+            </button>
+          </div>
+          <p class="color-hint">
+            Same template, your colours: companies using {{ template.name }} can each have their own
+            theme for their {{ copy().plural }}.
+          </p>
+
+          <div class="swatches" role="group" aria-labelledby="color-theme-heading">
+            @for (swatch of palette(); track swatch.color) {
+            <button
+              class="swatch"
+              type="button"
+              [style.background]="swatch.color"
+              [class.is-on]="isSwatch(swatch.color)"
+              [attr.aria-pressed]="isSwatch(swatch.color)"
+              [attr.aria-label]="swatch.name + ' ' + swatch.color"
+              [attr.title]="swatch.name"
+              [attr.data-testid]="'swatch-' + swatch.color.slice(1)"
+              (click)="setColor(swatch.color)"
+            ></button>
+            }
+          </div>
+
+          <div class="custom-color">
+            <label class="picker" title="Pick any colour">
+              <input
+                type="color"
+                [value]="selectedColor()"
+                (input)="onPicker($event)"
+                aria-label="Pick a custom colour"
+                data-testid="color-picker"
+              />
+            </label>
+            <label class="ui-field hex-field">
+              <span>Custom colour (hex)</span>
+              <input
+                class="ui-input"
+                [value]="hexDraft()"
+                (input)="onHexInput($event)"
+                maxlength="7"
+                placeholder="#2563eb"
+                spellcheck="false"
+                data-testid="color-hex"
+              />
+            </label>
+          </div>
+          @if (hexInvalid()) {
+          <small class="ui-field-error">Use a hex colour such as #2563eb.</small>
+          }
+        </div>
+
+        <div class="customiser-actions">
+          <button
+            class="ui-btn ui-btn-primary"
+            type="button"
+            [disabled]="saving() || !dirty()"
+            (click)="apply()"
+            data-testid="apply-template"
+          >
+            {{ saving() ? 'Applying…' : dirty() ? 'Apply ' + template.name + ' template' : 'Applied'
+            }}
+          </button>
+          <button
+            class="ui-btn ui-btn-ghost"
+            type="button"
+            [disabled]="previewing()"
+            (click)="previewPdf()"
+            data-testid="preview-pdf"
+          >
+            {{ previewing() ? 'Preparing…' : 'Preview PDF' }}
+          </button>
+        </div>
+      </section>
+      }
+
+      <section class="ui-card how-it-works">
+        <h3>How templates are applied</h3>
+        <ul>
+          @for (rule of copy().rules; track rule.strong) {
+          <li><strong>{{ rule.strong }}</strong> {{ rule.text }}</li>
+          }
+          <li>The on-screen sheet uses the same layout and colours as the downloaded PDF.</li>
+        </ul>
+        @if (active()?.appliedAt; as appliedAt) {
+        <p class="applied-at">Last applied {{ formatDate(appliedAt) }}</p>
+        }
+      </section>
+    </aside>
+  </div>
+  }
+</section>

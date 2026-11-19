@@ -1,0 +1,332 @@
+:host {
+  display: block;
+}
+
+.planner {
+  display: grid;
+  gap: 14px;
+}
+
+/* ------------------------------------------------------------ One document / termins */
+
+.mode {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.mode-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 11px 12px;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color 120ms ease-out,
+    background 120ms ease-out,
+    box-shadow 120ms ease-out;
+}
+
+.mode-option:hover {
+  border-color: var(--border-strong);
+}
+
+.mode-option.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.mode-mark {
+  display: grid;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.mode-option.is-active .mode-mark {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.mode-body {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.mode-body strong {
+  font-size: 12.5px;
+}
+
+.mode-body span {
+  color: var(--muted);
+  font-size: 10.5px;
+}
+
+/* ------------------------------------------------------------ Split */
+
+.split {
+  display: grid;
+  gap: 10px;
+}
+
+.split-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.count-label {
+  margin-right: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.count-step {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.count-step:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.count-step:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.count-value {
+  min-width: 22px;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.bar {
+  display: flex;
+  overflow: hidden;
+  height: 8px;
+  border-radius: 99px;
+  background: var(--surface-3);
+}
+
+.bar-part {
+  height: 100%;
+  transition: width 160ms ease-out;
+}
+
+.bar-part + .bar-part {
+  box-shadow: inset 2px 0 0 var(--surface);
+}
+
+.allocation {
+  display: flex;
+  gap: 5px;
+  margin: -4px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.allocation strong {
+  color: var(--text);
+}
+
+.allocation.is-full strong {
+  color: var(--success);
+}
+
+.allocation.is-over,
+.allocation.is-over strong {
+  color: var(--danger);
+}
+
+.rows {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 84px;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 8px 10px;
+}
+
+.row.is-locked {
+  background: var(--surface-2);
+}
+
+.row-mark {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.row-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.row-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11.5px;
+}
+
+.row-amount {
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.row-slider {
+  width: 100%;
+  margin: 2px 0 0;
+  cursor: pointer;
+}
+
+.row-lock {
+  color: var(--faint);
+  font-size: 10.5px;
+}
+
+.row-input {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.row-input .ui-input {
+  padding: 7px 8px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.row-input .ui-input:disabled {
+  background: transparent;
+  color: var(--muted);
+}
+
+.note {
+  margin: 0;
+  border-radius: 8px;
+  background: var(--surface-2);
+  padding: 8px 10px;
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+
+.note.is-error {
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.generate {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 2px 0 0;
+  border: 0;
+  padding: 0;
+}
+
+.generate legend {
+  margin-bottom: 6px;
+  padding: 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.generate-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 9px 10px;
+  cursor: pointer;
+}
+
+.generate-option.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.generate-option input {
+  margin: 2px 0 0;
+  accent-color: var(--accent);
+}
+
+.generate-option span {
+  display: grid;
+  gap: 1px;
+}
+
+.generate-option strong {
+  font-size: 11.5px;
+}
+
+.generate-option small {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+@media (max-width: 560px) {
+  .mode,
+  .generate {
+    grid-template-columns: 1fr;
+  }
+}

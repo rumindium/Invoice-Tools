@@ -2,6 +2,18 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { revisionFilename } from '../../core/revisions';
+import { InvoiceSheet } from '../../ui/invoice-sheet/invoice-sheet';
+import { VersionsCard } from '../../ui/versions-card';
+import { TerminPlanCard } from '../../ui/termins/termin-plan-card';
+import { terminLabel, terminPlanEventTitle, withTermin } from '../../core/termin.service';
+import {
+  DOCUMENT_STATUS_LABEL,
+  DOCUMENT_TYPE_LABEL,
+  DOCUMENT_TYPE_MARK,
+  documentLink,
+  flowEventTitle,
+} from '../../core/document-flow';
 import { formatDate, formatMoney } from '../../core/format';
 import { apiErrorMessage } from '../../core/http-error';
 import {
@@ -47,9 +59,13 @@ function today(): string {
 
 @Component({
   selector: 'app-invoice-detail',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, VersionsCard, InvoiceSheet, TerminPlanCard],
   templateUrl: './invoice-detail.html',
-  styleUrl: './invoice-detail.scss',
+  styleUrls: [
+    './invoice-detail.scss',
+    './invoice-flow.scss',
+    '../quotations/quotation-detail.scss',
+  ],
 })
 export class InvoiceDetailPage {
   private readonly route = inject(ActivatedRoute);
@@ -82,6 +98,15 @@ export class InvoiceDetailPage {
   protected readonly statusActionLabel = STATUS_ACTION_LABEL;
   protected readonly statusClass = statusClass;
 
+  protected readonly documentStatusLabel = DOCUMENT_STATUS_LABEL;
+  protected readonly documentTypeLabel = DOCUMENT_TYPE_LABEL;
+  protected readonly documentTypeMark = DOCUMENT_TYPE_MARK;
+  protected readonly documentLink = documentLink;
+  protected readonly flowEventTitle = flowEventTitle;
+  protected readonly terminLabel = terminLabel;
+  protected readonly flow = computed(() => this.invoice()?.flow ?? null);
+  protected readonly flowEvents = computed(() => this.flow()?.events ?? []);
+
   protected readonly followUpForm = this.fb.nonNullable.group({
     activity: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(160)]],
     method: ['EMAIL' as FollowUpMethod, Validators.required],
@@ -96,9 +121,17 @@ export class InvoiceDetailPage {
     return invoice ? displayStatus(invoice) : 'DRAFT';
   });
 
-  protected readonly canEdit = computed(() => this.invoice()?.status === 'DRAFT');
+  /** Set when an archived older version is shown (read-only). */
+  protected readonly viewing = computed(() => this.invoice()?.supersededRevision ?? null);
+  protected readonly canEdit = computed(
+    () => !this.viewing() && this.invoice()?.status === 'DRAFT',
+  );
   protected readonly canDelete = computed(
-    () => this.invoice()?.status === 'DRAFT' || this.invoice()?.status === 'VOID',
+    () =>
+      !this.viewing() && (this.invoice()?.status === 'DRAFT' || this.invoice()?.status === 'VOID'),
+  );
+  protected readonly canRevise = computed(
+    () => !this.viewing() && Boolean(this.invoice()?.canRevise),
   );
 
   protected readonly nextStatuses = computed(() => this.invoice()?.nextStatuses ?? []);
@@ -134,7 +167,31 @@ export class InvoiceDetailPage {
     this.actionError.set('');
 
     try {
-      await this.invoicesApi.downloadPdf(invoice.id, pdfFilename(invoice));
+      const viewing = this.viewing();
+      if (viewing) {
+        await this.invoicesApi.downloadRevisionPdf(
+          invoice.id,
+          viewing.revision,
+          revisionFilename(invoice.number, 'invoice', viewing.revision),
+        );
+      } else {
+        await this.invoicesApi.downloadPdf(invoice.id, pdfFilename(invoice));
+      }
+    } catch (error) {
+      this.actionError.set(apiErrorMessage(error));
+    }
+  }
+
+  protected async downloadRevision(revision: number): Promise<void> {
+    const invoice = this.invoice();
+    if (!invoice) return;
+    this.actionError.set('');
+    try {
+      await this.invoicesApi.downloadRevisionPdf(
+        invoice.id,
+        revision,
+        revisionFilename(invoice.number, 'invoice', revision),
+      );
     } catch (error) {
       this.actionError.set(apiErrorMessage(error));
     }
@@ -292,7 +349,20 @@ export class InvoiceDetailPage {
 
   protected historyTitle(entry: InvoiceHistoryEntry): string {
     if (entry.action === 'invoice.created') {
-      return 'Invoice created';
+      return withTermin('Invoice created', entry);
+    }
+
+    const planTitle = terminPlanEventTitle(entry.action);
+    if (planTitle) {
+      return planTitle;
+    }
+
+    if (entry.action === 'invoice.updated') {
+      return 'Invoice edited';
+    }
+
+    if (entry.action === 'invoice.revised') {
+      return `Revised to version ${entry.revision}`;
     }
 
     const from = entry.fromStatus ? (STATUS_LABEL[entry.fromStatus] ?? entry.fromStatus) : '—';
@@ -311,6 +381,17 @@ export class InvoiceDetailPage {
     }).format(new Date(value));
   }
 
+  /** A termin plan changed: reload without the loading state (keeps the cards). */
+  protected async planChanged(): Promise<void> {
+    const invoice = this.invoice();
+    if (!invoice) return;
+    try {
+      this.invoice.set(await this.invoicesApi.get(invoice.id));
+    } catch (error) {
+      this.actionError.set(apiErrorMessage(error));
+    }
+  }
+
   private async load(): Promise<void> {
     const id = this.route.snapshot.paramMap.get('id');
     this.loading.set(true);
@@ -326,7 +407,10 @@ export class InvoiceDetailPage {
     }
 
     try {
-      const invoice = await this.invoicesApi.get(id);
+      const revision = Number(this.route.snapshot.paramMap.get('revision'));
+      const invoice = revision
+        ? await this.invoicesApi.getRevision(id, revision)
+        : await this.invoicesApi.get(id);
       this.invoice.set(invoice);
       this.followUps.set(invoice.followUps);
     } catch (error) {

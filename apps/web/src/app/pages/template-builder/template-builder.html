@@ -1,0 +1,332 @@
+<div class="builder" data-testid="template-builder">
+  <header class="topbar">
+    <div class="top-left">
+      <a
+        class="brand"
+        routerLink="/dashboard"
+        aria-label="Rumindium Template Studio — back to the dashboard"
+      >
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 30 30" fill="none" focusable="false">
+            <rect x="5" y="5" width="8" height="8" rx="2.2" fill="currentColor" />
+            <rect x="17" y="17" width="8" height="8" rx="2.2" fill="currentColor" opacity="0.65" />
+            <path
+              d="M13 9h3.5A3.5 3.5 0 0 1 20 12.5V17"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            />
+          </svg>
+        </span>
+        <span class="brand-words">
+          <small>Rumindium</small>
+          <strong>Template Studio</strong>
+        </span>
+      </a>
+
+      <nav class="crumbs" aria-label="Breadcrumb">
+        <a
+          class="crumb-link"
+          routerLink="/templates/builder"
+          data-testid="builder-back"
+          title="Back to my templates"
+        >
+          <app-tb-icon name="back" [size]="16" />
+          <span>My templates</span>
+        </a>
+        <span class="crumb-sep" aria-hidden="true">/</span>
+        <span class="kind-badge" data-testid="template-kind">{{ kindTitle() }} template</span>
+        <span class="crumb-sep" aria-hidden="true">/</span>
+        <input
+          class="design-name"
+          aria-label="Design name"
+          data-testid="design-name"
+          maxlength="80"
+          spellcheck="false"
+          [value]="design().name"
+          (change)="rename($event)"
+          (keydown.enter)="$any($event.target).blur()"
+        />
+      </nav>
+    </div>
+
+    <div class="top-right">
+      <span
+        class="save-state"
+        [class.is-busy]="store.saveState() === 'pending' || store.saveState() === 'saving'"
+        [class.is-error]="store.saveState() === 'error' || store.saveState() === 'conflict'"
+        data-testid="save-state"
+      >
+        <span class="save-dot" aria-hidden="true"></span>{{ saveLabel() }}
+      </span>
+
+      <div class="tool-group" role="group" aria-label="History and file">
+        <button
+          type="button"
+          class="tool-btn"
+          title="Undo (Ctrl+Z)"
+          aria-label="Undo"
+          data-testid="undo"
+          [disabled]="!store.canUndo()"
+          (click)="store.undo()"
+        >
+          <app-tb-icon name="undo" />
+        </button>
+        <button
+          type="button"
+          class="tool-btn"
+          title="Redo (Ctrl+Shift+Z)"
+          aria-label="Redo"
+          data-testid="redo"
+          [disabled]="!store.canRedo()"
+          (click)="store.redo()"
+        >
+          <app-tb-icon name="redo" />
+        </button>
+        <div class="file-menu">
+          <button
+            type="button"
+            class="tool-btn wide"
+            data-testid="file-menu"
+            aria-haspopup="menu"
+            [attr.aria-expanded]="menuOpen()"
+            [class.is-on]="menuOpen()"
+            (click)="menuOpen.set(!menuOpen())"
+          >
+            <app-tb-icon name="file" [size]="16" /> File
+          </button>
+          @if (menuOpen()) {
+          <div class="menu" role="menu" data-testid="file-menu-items">
+            <span class="menu-label">Output</span>
+            <button type="button" role="menuitem" data-testid="menu-pdf" (click)="previewPdf()">
+              <app-tb-icon name="download" /> PDF with sample data
+            </button>
+            <button type="button" role="menuitem" data-testid="menu-print" (click)="print()">
+              <app-tb-icon name="print" /> Print from the browser
+            </button>
+            <span class="menu-label">Template file</span>
+            <button type="button" role="menuitem" data-testid="menu-export" (click)="exportJson()">
+              <app-tb-icon name="download" /> Export design (.json)
+            </button>
+            <label role="menuitem" class="menu-file">
+              <app-tb-icon name="import" /> Import into this template (.json)
+              <input
+                type="file"
+                accept="application/json,.json"
+                hidden
+                data-testid="menu-import"
+                (change)="importJson($event)"
+              />
+            </label>
+            <span class="menu-sep"></span>
+            <button
+              type="button"
+              role="menuitem"
+              (click)="menuOpen.set(false); shortcutsOpen.set(true)"
+            >
+              <app-tb-icon name="keyboard" /> Keyboard shortcuts
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              class="danger"
+              data-testid="menu-delete"
+              (click)="deleteDesign()"
+            >
+              <app-tb-icon name="trash" /> Delete design
+            </button>
+          </div>
+          }
+        </div>
+      </div>
+
+      <span class="top-sep" aria-hidden="true"></span>
+
+      <button
+        type="button"
+        class="ghost-btn"
+        data-testid="preview-toggle"
+        [class.is-on]="store.preview()"
+        [attr.aria-pressed]="store.preview()"
+        (click)="togglePreview()"
+      >
+        <app-tb-icon [name]="store.preview() ? 'eyeOff' : 'eye'" [size]="16" />
+        <span>{{ store.preview() ? 'Exit preview' : 'Preview' }}</span>
+      </button>
+      <button
+        type="button"
+        class="ghost-btn"
+        title="Open a PDF with sample data (rendered like real documents)"
+        data-testid="preview-pdf"
+        [disabled]="previewing() || !store.ready()"
+        (click)="previewPdf()"
+      >
+        <app-tb-icon name="download" [size]="16" />
+        <span>{{ previewing() ? 'Preparing…' : 'PDF' }}</span>
+      </button>
+      <button
+        type="button"
+        class="primary-btn"
+        data-testid="save-to"
+        [disabled]="savingTo() || !store.ready() || store.saveState() === 'conflict'"
+        [title]="'Save this template as your ' + kindTitle().toLowerCase() + ' template'"
+        (click)="saveTo()"
+      >
+        <app-tb-icon name="check" [size]="16" />
+        {{ savingTo() ? 'Saving…' : 'Save to ' + kindTitle() }}
+      </button>
+    </div>
+  </header>
+
+  <div class="body">
+    <nav class="rail" aria-label="Builder tools">
+      @for (tab of tabs; track tab.key) {
+      <button
+        type="button"
+        class="rail-btn"
+        [class.is-active]="store.panel() === tab.key"
+        [attr.aria-pressed]="store.panel() === tab.key"
+        [attr.data-testid]="'rail-' + tab.key"
+        [title]="tab.title"
+        (click)="togglePanel(tab.key)"
+      >
+        <span class="rail-icon"><app-tb-icon [name]="tab.icon" [size]="19" /></span>
+        <span class="rail-label">{{ tab.label }}</span>
+      </button>
+      }
+      <span class="rail-spacer"></span>
+      <button
+        type="button"
+        class="rail-btn"
+        title="Keyboard shortcuts (?)"
+        data-testid="rail-help"
+        (click)="shortcutsOpen.set(true)"
+      >
+        <span class="rail-icon"><app-tb-icon name="keyboard" [size]="19" /></span>
+        <span class="rail-label">Keys</span>
+      </button>
+    </nav>
+
+    @if (store.panel(); as panel) {
+    <aside class="panel" [attr.aria-label]="panelTitle()" data-testid="builder-panel">
+      <header class="panel-head">
+        <div>
+          <span class="panel-eyebrow">{{ panelEyebrow() }}</span>
+          <h2>{{ panelTitle() }}</h2>
+        </div>
+        <button
+          type="button"
+          class="panel-close"
+          aria-label="Close panel"
+          title="Close panel"
+          data-testid="panel-close"
+          (click)="store.panel.set(null)"
+        >
+          <app-tb-icon name="close" [size]="16" />
+        </button>
+      </header>
+      <div class="panel-scroll">
+        @switch (panel) { @case ('signature') {
+        <app-builder-signature-panel />
+        } @case ('layers') {
+        <app-builder-layers-panel />
+        } @default {
+        <app-builder-panels />
+        } }
+      </div>
+    </aside>
+    }
+
+    <main class="main">
+      @if (store.saveState() === 'conflict') {
+      <div class="banner" role="alert" data-testid="conflict-banner">
+        <span class="banner-icon" aria-hidden="true">!</span>
+        <span class="banner-text">
+          <strong>This design was changed somewhere else</strong> (another tab or a colleague). Your
+          latest edits are not saved yet.
+        </span>
+        <button
+          type="button"
+          class="banner-btn"
+          data-testid="conflict-reload"
+          (click)="store.reloadLatest()"
+        >
+          Load theirs
+        </button>
+        <button
+          type="button"
+          class="banner-btn primary"
+          data-testid="conflict-keep"
+          (click)="store.keepMine()"
+        >
+          Keep mine
+        </button>
+      </div>
+      }
+      <app-builder-toolbar />
+      <app-builder-canvas class="canvas" [class.is-loading]="!store.ready()" />
+      @if (!store.ready()) {
+      <div class="loading" data-testid="builder-loading">
+        @if (loadError()) {
+        <p role="alert">The design could not be loaded: {{ loadError() }}</p>
+        <button type="button" class="banner-btn primary" (click)="retryOpen()">Try again</button>
+        } @else {
+        <span class="loading-mark" aria-hidden="true">
+          <svg viewBox="0 0 30 30" fill="none">
+            <rect x="5" y="5" width="8" height="8" rx="2.2" fill="currentColor" />
+            <rect x="17" y="17" width="8" height="8" rx="2.2" fill="currentColor" opacity="0.65" />
+            <path
+              d="M13 9h3.5A3.5 3.5 0 0 1 20 12.5V17"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            />
+          </svg>
+        </span>
+        <p>Opening your template…</p>
+        }
+      </div>
+      }
+      <app-builder-statusbar />
+    </main>
+  </div>
+
+  <app-builder-toasts />
+
+  @if (shortcutsOpen()) {
+  <div class="scrim" data-testid="shortcuts-dialog">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title">
+      <header>
+        <h2 id="shortcuts-title">Keyboard shortcuts</h2>
+        <button
+          type="button"
+          class="panel-close"
+          aria-label="Close"
+          (click)="shortcutsOpen.set(false)"
+        >
+          <app-tb-icon name="close" />
+        </button>
+      </header>
+      <dl>
+        @for (entry of shortcuts; track entry[0]) {
+        <dt><kbd>{{ entry[0] }}</kbd></dt>
+        <dd>{{ entry[1] }}</dd>
+        }
+      </dl>
+    </div>
+  </div>
+  }
+
+  <!-- Rendered only while printing: the page at full size with sample data. -->
+  @if (printing()) {
+  <div class="print-root" aria-hidden="true">
+    <app-design-thumb
+      [elements]="design().elements"
+      [page]="design().page"
+      [context]="store.context()"
+      [width]="store.page().width"
+      [flat]="true"
+    />
+  </div>
+  }
+</div>

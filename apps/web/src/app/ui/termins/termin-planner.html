@@ -1,0 +1,186 @@
+<div class="planner" [attr.data-testid]="testId()">
+  @if (allowSingle()) {
+  <div class="mode" role="radiogroup" aria-label="How to create the documents">
+    <button
+      type="button"
+      role="radio"
+      class="mode-option"
+      [class.is-active]="!split()"
+      [attr.aria-checked]="!split()"
+      data-testid="termin-mode-single"
+      (click)="setSplit(false)"
+    >
+      <span class="mode-mark" aria-hidden="true">1</span>
+      <span class="mode-body">
+        <strong>One {{ noun() }}</strong>
+        <span>Everything at once, {{ money(total()) }}</span>
+      </span>
+    </button>
+    <button
+      type="button"
+      role="radio"
+      class="mode-option"
+      [class.is-active]="split()"
+      [attr.aria-checked]="split()"
+      data-testid="termin-mode-split"
+      (click)="setSplit(true)"
+    >
+      <span class="mode-mark" aria-hidden="true">%</span>
+      <span class="mode-body">
+        <strong>Payment termins</strong>
+        <span>Split into 2–12 {{ nounPlural() }} by percentage</span>
+      </span>
+    </button>
+  </div>
+  } @if (split()) {
+  <div class="split">
+    <div class="split-head">
+      <div class="count" role="group" aria-label="Number of termins">
+        <span class="count-label" id="termin-count-label">Termins</span>
+        <button
+          type="button"
+          class="count-step"
+          aria-label="Fewer termins"
+          [disabled]="count() <= minCount()"
+          (click)="setCount(count() - 1)"
+        >
+          −
+        </button>
+        <output class="count-value" aria-labelledby="termin-count-label" data-testid="termin-count"
+          >{{ count() }}</output
+        >
+        <button
+          type="button"
+          class="count-step"
+          aria-label="More termins"
+          [disabled]="count() >= maxTermins"
+          (click)="setCount(count() + 1)"
+        >
+          +
+        </button>
+      </div>
+      <button
+        type="button"
+        class="ui-link"
+        data-testid="termin-split-evenly"
+        (click)="splitEvenly()"
+      >
+        Split evenly
+      </button>
+    </div>
+
+    <div class="bar" aria-hidden="true">
+      @for (row of rows(); track row.sequence) { @if (row.percentage > 0) {
+      <span
+        class="bar-part"
+        [style.width.%]="row.percentage > 100 ? 100 : row.percentage"
+        [style.background]="row.color"
+      ></span>
+      } }
+    </div>
+    <p
+      class="allocation"
+      [class.is-over]="allocated() > 100"
+      [class.is-full]="allocated() === 100"
+      data-testid="termin-allocation"
+    >
+      <strong>{{ formatPercentage(allocated()) }} allocated</strong>
+      @if (allocated() <= 100) {
+      <span>· {{ formatPercentage(remaining()) }} remaining</span>
+      } @else {
+      <span>· {{ formatPercentage(-remaining()) }} over</span>
+      }
+    </p>
+
+    <ol class="rows">
+      @for (row of rows(); track row.sequence; let i = $index) {
+      <li class="row" [class.is-locked]="row.locked" data-testid="termin-row">
+        <span class="row-mark" [style.background]="row.color" aria-hidden="true"
+          >{{ row.sequence }}</span
+        >
+        <div class="row-main">
+          <div class="row-top">
+            <strong>Termin {{ row.sequence }}</strong>
+            <span class="row-amount" data-testid="termin-row-amount">{{ money(row.amount) }}</span>
+          </div>
+          @if (row.locked) {
+          <span class="row-lock">{{ row.locked }} is live · percentage fixed</span>
+          } @else {
+          <input
+            class="row-slider"
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            [value]="row.percentage"
+            [style.accent-color]="row.color"
+            [attr.aria-label]="'Termin ' + row.sequence + ' share'"
+            (input)="slide(i, $event)"
+          />
+          }
+        </div>
+        <label class="row-input">
+          <input
+            class="ui-input"
+            type="number"
+            inputmode="decimal"
+            min="0"
+            max="100"
+            step="0.01"
+            [value]="row.percentage"
+            [disabled]="!!row.locked"
+            [attr.aria-label]="'Termin ' + row.sequence + ' percentage'"
+            (input)="type(i, $event)"
+          />
+          <span aria-hidden="true">%</span>
+        </label>
+      </li>
+      }
+    </ol>
+
+    @if (error(); as message) {
+    <p class="note is-error" role="alert" data-testid="termin-error">{{ message }}</p>
+    } @else { @if (zeroTermins().length) {
+    <p class="note" data-testid="termin-zero-note">
+      Termin {{ zeroTermins().join(', ') }} {{ zeroTermins().length === 1 ? 'is' : 'are' }} 0% — a
+      termin is generated only once it has a share.
+    </p>
+    } @if (remaining() > 0) {
+    <p class="note">
+      {{ formatPercentage(remaining()) }} is not assigned to any termin. You can add it to a termin
+      later while that termin has no document.
+    </p>
+    } } @if (showGenerate()) {
+    <fieldset class="generate">
+      <legend>Create now</legend>
+      <label class="generate-option" [class.is-active]="draft().generate === 'FIRST'">
+        <input
+          type="radio"
+          name="termin-generate"
+          value="FIRST"
+          [checked]="draft().generate === 'FIRST'"
+          (change)="setGenerate('FIRST')"
+        />
+        <span>
+          <strong>Only termin {{ firstWithShare() || 1 }}</strong>
+          <small>The other termins wait in the plan; create each one when it is due.</small>
+        </span>
+      </label>
+      <label class="generate-option" [class.is-active]="draft().generate === 'ALL'">
+        <input
+          type="radio"
+          name="termin-generate"
+          value="ALL"
+          [checked]="draft().generate === 'ALL'"
+          (change)="setGenerate('ALL')"
+        />
+        <span>
+          <strong>All {{ withShare().length }} termins</strong>
+          <small>One {{ noun() }} per termin, right away.</small>
+        </span>
+      </label>
+    </fieldset>
+    }
+  </div>
+  }
+</div>

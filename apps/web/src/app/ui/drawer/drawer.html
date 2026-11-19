@@ -1,0 +1,39 @@
+@if (rendered()) {
+<div class="drawer" [class.is-active]="active()">
+  <div class="drawer-backdrop" (click)="requestClose()" aria-hidden="true"></div>
+
+  <aside
+    #panel
+    class="drawer-panel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="drawer-title"
+    tabindex="-1"
+  >
+    <header class="drawer-head">
+      <div>
+        <h2 id="drawer-title">{{ title() }}</h2>
+        @if (subtitle()) {
+        <p>{{ subtitle() }}</p>
+        }
+      </div>
+      <button class="drawer-close" type="button" aria-label="Close" (click)="requestClose()">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="m6 6 12 12M18 6 6 18" />
+        </svg>
+      </button>
+    </header>
+
+    <div class="drawer-body">
+      <ng-content />
+    </div>
+  </aside>
+</div>
+}

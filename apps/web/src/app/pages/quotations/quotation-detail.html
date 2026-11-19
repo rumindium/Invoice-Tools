@@ -1,0 +1,309 @@
+<section class="ui-page">
+  <header class="ui-page-head generator-head">
+    <div>
+      <a class="back-link" routerLink="/quotations">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M20 12H4M10 6l-6 6 6 6" />
+        </svg>
+        My quotations
+      </a>
+      <p class="ui-eyebrow">Quotation</p>
+      <h1>{{ quotation()?.number ?? 'Quotation' }}</h1>
+      @if (quotation(); as current) {
+      <span class="version-pill" data-testid="document-version"
+        >Version {{ current.revision }}</span
+      >
+      }
+      <p class="ui-sub">Send it, record the customer's answer, and download the A4 portrait PDF.</p>
+    </div>
+
+    <div class="detail-actions">
+      @if (quotation()?.canCreateGoodsReceipt && !viewing()) {
+      <button
+        class="ui-btn ui-btn-primary"
+        type="button"
+        [disabled]="creatingReceipt()"
+        (click)="openReceiptDialog()"
+      >
+        {{ creatingReceipt() ? 'Creating…' : 'Create goods receipt' }}
+      </button>
+      }
+      <button class="ui-btn ui-btn-ghost" type="button" [disabled]="busy()" (click)="download()">
+        Download PDF
+      </button>
+      @if (canEdit()) {
+      <a
+        class="ui-btn ui-btn-ghost"
+        [routerLink]="['/quotations/new']"
+        [queryParams]="{ id: quotation()?.id }"
+      >
+        Edit
+      </a>
+      } @if (canRevise()) {
+      <a
+        class="ui-btn ui-btn-ghost"
+        [routerLink]="['/quotations/new']"
+        [queryParams]="{ id: quotation()?.id, revise: 1 }"
+      >
+        Revise
+      </a>
+      } @if (canDelete()) {
+      <button class="ui-btn ui-btn-ghost" type="button" [disabled]="busy()" (click)="remove()">
+        Delete
+      </button>
+      }
+    </div>
+  </header>
+
+  @if (loadError()) {
+  <div class="ui-alert" role="alert">
+    <span>{{ loadError() }}</span>
+    <a class="ui-link" routerLink="/quotations">Back to my quotations</a>
+  </div>
+  } @if (viewing(); as v) {
+  <div class="ui-alert revision-banner" role="status" data-testid="revision-banner">
+    <span>
+      <strong>Version {{ v.revision }} (read-only)</strong> — replaced on {{
+      formatDateTime(v.supersededAt) }}{{ v.supersededByName ? ' by ' + v.supersededByName : '' }}{{
+      v.reason ? ': “' + v.reason + '”' : '' }}
+    </span>
+    <a class="ui-link" [routerLink]="['/quotations', quotation()?.id]">
+      Open current version (version {{ v.currentRevision }})
+    </a>
+  </div>
+  } @if (actionError()) {
+  <div class="ui-alert" role="alert">
+    <span>{{ actionError() }}</span>
+    <button class="ui-link" type="button" (click)="actionError.set('')">Close</button>
+  </div>
+  } @if (loading()) {
+  <div class="ui-card ui-empty"><strong>Loading quotation…</strong></div>
+  } @else if (quotation(); as q) {
+  <div class="detail-grid quote-grid">
+    <div class="sheet-column">
+      <div class="sheet-toolbar">
+        <span class="sheet-format">A4 · Portrait</span>
+        <span class="template-chip" data-testid="quotation-template">
+          <span
+            class="template-swatch"
+            [style.background]="q.template.accentColor"
+            aria-hidden="true"
+          ></span>
+          {{ q.template.key === 'custom' ? q.template.name + ' · Template Builder' : q.template.name
+          + ' template' }}
+        </span>
+        @if (q.template.locked) {
+        <span class="template-note" data-testid="quotation-template-locked">
+          Kept from when it was sent
+        </span>
+        } @else if (!viewing()) {
+        <a class="ui-link" routerLink="/templates/quotations" data-testid="change-template">
+          Change template
+        </a>
+        }
+      </div>
+      <app-quotation-sheet
+        [quotation]="q"
+        [templateKey]="q.template.key"
+        [accentColor]="q.template.accentColor"
+        [design]="q.template.design"
+      />
+    </div>
+
+    <aside class="status-column">
+      @if (viewing()) {
+      <section class="ui-card track-card">
+        <header class="track-head">
+          <h2>Archived version</h2>
+          <span class="ui-badge ui-badge-amber">Superseded</span>
+        </header>
+        <p class="track-hint">
+          This is how the quotation looked as version {{ q.revision }}, status {{
+          statusLabel[displayStatus()] }}. Actions are available on the current version.
+        </p>
+      </section>
+      } @else {
+      <section class="ui-card track-card" aria-labelledby="status-heading">
+        <header class="track-head">
+          <h2 id="status-heading">Status</h2>
+          <span [class]="statusClass(displayStatus())">{{ statusLabel[displayStatus()] }}</span>
+        </header>
+
+        <ol class="tracker">
+          @for (step of tracker(); track step.key) {
+          <li [class]="'tracker-step is-' + step.state">
+            <span class="tracker-dot" aria-hidden="true"></span>
+            <span class="tracker-label">{{ step.label }}</span>
+          </li>
+          }
+        </ol>
+
+        @if (q.expired) {
+        <p class="track-hint">
+          The validity date has passed. You can still record the customer's answer.
+        </p>
+        } @if (nextStatuses().length === 0) {
+        <p class="track-hint">
+          {{ q.status === 'ACCEPTED' ? 'The customer accepted this quotation.' : 'This quotation was
+          rejected.' }} No further status change is possible.
+        </p>
+        } @else {
+        <div class="status-form">
+          <label class="ui-field">
+            <span>Change status to</span>
+            <select class="ui-select" [value]="selectedStatus()" (change)="updateSelection($event)">
+              <option value="">Select a status…</option>
+              @for (status of nextStatuses(); track status) {
+              <option [value]="status">{{ statusActionLabel[status] }}</option>
+              }
+            </select>
+          </label>
+
+          @if (selectedStatus() === 'REJECTED' || selectedStatus() === 'ACCEPTED') {
+          <label class="ui-field">
+            <span
+              >{{ selectedStatus() === 'REJECTED' ? 'Reason (optional)' : 'Note (optional)' }}</span
+            >
+            <textarea
+              class="ui-textarea"
+              rows="2"
+              [placeholder]="selectedStatus() === 'REJECTED' ? 'Budget moved to next quarter' : 'PO 4471 received'"
+              [value]="reason()"
+              (input)="updateReason($event)"
+            ></textarea>
+          </label>
+          }
+
+          <button
+            class="ui-btn ui-btn-primary status-apply"
+            type="button"
+            [disabled]="busy() || !selectedStatus()"
+            (click)="applyStatus()"
+          >
+            {{ busy() ? 'Saving…' : 'Apply status' }}
+          </button>
+        </div>
+        }
+      </section>
+
+      @if (q.terminPlan; as plan) {
+      <app-termin-plan-card [plan]="plan" [hideSource]="true" (changed)="planChanged()" />
+      } @else if (q.status === 'ACCEPTED') {
+      <section
+        class="ui-card next-step-card"
+        aria-labelledby="next-step-heading"
+        data-testid="quotation-next-step"
+      >
+        <header class="track-head">
+          <h2 id="next-step-heading">Next step · Goods receipt</h2>
+        </header>
+        @if (q.goodsReceipt; as receipt) {
+        <a
+          class="linked-doc"
+          [routerLink]="['/goods-receipts', receipt.id]"
+          data-testid="linked-goods-receipt"
+        >
+          <span class="kind-mark" aria-hidden="true">GR</span>
+          <span class="linked-doc-body">
+            <strong>{{ receipt.number }}</strong>
+            <span>Created {{ formatDate(receipt.issueDate) }}</span>
+          </span>
+          <span [class]="receiptStatusClass(receipt.status)"
+            >{{ receiptStatusLabel(receipt.status) }}</span
+          >
+        </a>
+        @if (q.invoice; as invoice) {
+        <a
+          class="linked-doc"
+          [routerLink]="['/documents', invoice.id]"
+          data-testid="quotation-linked-invoice"
+        >
+          <span class="kind-mark" aria-hidden="true">INV</span>
+          <span class="linked-doc-body">
+            <strong>{{ invoice.number }}</strong>
+            <span>Invoice · created {{ formatDate(invoice.issueDate) }}</span>
+          </span>
+          <span class="ui-badge ui-badge-neutral">{{ receiptStatusLabel(invoice.status) }}</span>
+        </a>
+        } } @else {
+        <p class="track-hint">
+          The customer accepted this offer. Record the delivery with one goods receipt that carries
+          every item of this quotation, or split it into payment termins.
+        </p>
+        <button
+          class="ui-btn ui-btn-primary status-apply"
+          type="button"
+          [disabled]="creatingReceipt()"
+          (click)="openReceiptDialog()"
+        >
+          {{ creatingReceipt() ? 'Creating…' : 'Create goods receipt' }}
+        </button>
+        }
+      </section>
+      }
+
+      <app-versions-card
+        [revision]="q.revision"
+        [revisions]="q.revisions"
+        [revisionBlockedBy]="q.revisionBlockedBy"
+        [baseLink]="['/quotations', q.id]"
+        [currency]="q.currency"
+        reviseHint="Revising a sent or accepted quotation keeps the replaced version here."
+        (download)="downloadRevision($event)"
+      />
+
+      <section class="ui-card history-card" aria-labelledby="history-heading">
+        <header class="track-head">
+          <h2 id="history-heading">History</h2>
+          <span class="history-count">{{ q.history.length }}</span>
+        </header>
+
+        @if (history().length === 0) {
+        <p class="track-hint">No activity recorded for this quotation yet.</p>
+        } @else {
+        <ol class="history">
+          @for (entry of history(); track entry.id) {
+          <li>
+            <span class="history-dot" aria-hidden="true"></span>
+            <div class="history-body">
+              <strong>{{ historyTitle(entry) }}</strong>
+              <span class="history-meta">
+                {{ formatDateTime(entry.at) }}{{ entry.actorName ? ' · ' + entry.actorName : '' }}
+              </span>
+              @if (entry.reason) {
+              <span class="history-reason">{{ entry.reason }}</span>
+              }
+            </div>
+          </li>
+          }
+        </ol>
+        }
+      </section>
+      }
+    </aside>
+  </div>
+  } @if (quotation(); as q) {
+  <app-termin-dialog
+    [open]="receiptDialog()"
+    heading="Create goods receipt"
+    intro="Receive everything in one goods receipt, or split the quotation into payment termins — each termin gets its own goods receipt with its share of every item."
+    [sourceLabel]="(q.number ?? 'Quotation') + ' · ' + q.recipient.name"
+    [total]="q.totals.grandTotal"
+    [currency]="q.currency"
+    noun="goods receipt"
+    nounPlural="goods receipts"
+    [busy]="creatingReceipt()"
+    [error]="receiptError()"
+    testId="goods-receipt-dialog"
+    (confirmed)="createGoodsReceipt($event)"
+    (closed)="receiptDialog.set(false)"
+  />
+  }
+</section>

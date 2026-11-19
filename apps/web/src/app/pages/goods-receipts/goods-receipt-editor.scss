@@ -1,0 +1,83 @@
+.back-link {
+  display: flex;
+  width: fit-content;
+}
+
+.form-card-head .ui-link {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-size: 11.5px;
+  font-weight: 650;
+}
+
+.items-head.gr-lines,
+.item-row.gr-lines {
+  grid-template-columns: 20px minmax(140px, 1fr) 62px 80px 80px 62px minmax(110px, 0.8fr);
+  align-items: center;
+}
+
+.gr-index {
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.gr-item {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.gr-item strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.gr-item span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gr-qty {
+  color: var(--text);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.gr-accepted {
+  font-weight: 700;
+}
+
+.gr-line-error {
+  grid-column: 2 / -1;
+}
+
+.ui-input.is-invalid {
+  border-color: var(--danger, #dc2626);
+}
+
+.summary-row a {
+  font-weight: 600;
+}
+
+@media (max-width: 760px) {
+  .item-row.gr-lines {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gr-item {
+    grid-column: 1 / -1;
+  }
+}
+
+.revision-card {
+  border-color: #fcd34d;
+}
+
+.revision-card .form-card-head {
+  background: #fffbeb;
+}

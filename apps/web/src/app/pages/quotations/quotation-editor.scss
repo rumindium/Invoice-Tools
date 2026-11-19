@@ -1,0 +1,46 @@
+.items-head.quote-items,
+.item-row.quote-items {
+  grid-template-columns: minmax(150px, 1fr) 58px 74px 112px 56px 104px 28px;
+}
+
+.attention-block {
+  display: grid;
+  gap: 12px;
+  border-top: 1px dashed var(--border);
+  padding-top: 14px;
+}
+
+.signature-body {
+  display: grid;
+  grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.signature-fields {
+  gap: 12px;
+}
+
+@media (max-width: 760px) {
+  .item-row.quote-items {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .signature-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Keep the back link on its own line above the eyebrow. */
+.back-link {
+  display: flex;
+  width: fit-content;
+}
+
+.revision-card {
+  border-color: #fcd34d;
+}
+
+.revision-card .form-card-head {
+  background: #fffbeb;
+}

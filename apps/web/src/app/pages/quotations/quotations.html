@@ -1,0 +1,217 @@
+<section class="ui-page">
+  <header class="ui-page-head">
+    <div>
+      <p class="ui-eyebrow">Quotation</p>
+      <h1>My quotations</h1>
+      <p class="ui-sub">
+        Every offer sent from this workspace, from draft to accepted, with its PDF ready to
+        download.
+      </p>
+    </div>
+    <div class="ui-actions">
+      <a class="ui-btn ui-btn-primary" routerLink="/quotations/new">
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.9"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        Create quotation
+      </a>
+    </div>
+  </header>
+
+  @if (actionError()) {
+  <div class="ui-alert" role="alert">
+    <span>{{ actionError() }}</span>
+    <button class="ui-link" type="button" (click)="actionError.set('')">Close</button>
+  </div>
+  }
+
+  <section class="ui-card documents-card" aria-labelledby="documents-heading">
+    <div class="documents-toolbar">
+      <span class="toolbar-title">Quotation list</span>
+
+      <div class="toolbar-controls">
+        <label class="status-filter">
+          <span class="sr-only">Filter by status</span>
+          <select class="ui-select" [value]="status()" (change)="updateStatus($event)">
+            @for (filter of filters; track filter.value) {
+            <option [value]="filter.value">{{ filter.label }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="search-box">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="6.5" />
+            <path d="m16 16 4 4" />
+          </svg>
+          <input
+            type="search"
+            placeholder="Search by number or recipient…"
+            [value]="search()"
+            (input)="updateSearch($event)"
+            aria-label="Search quotations"
+          />
+          @if (search()) {
+          <button
+            class="search-clear"
+            type="button"
+            aria-label="Clear search"
+            (click)="clearSearch()"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="m6 6 12 12M18 6 6 18" />
+            </svg>
+          </button>
+          }
+        </label>
+      </div>
+    </div>
+
+    <div class="documents-meta">
+      <span id="documents-heading">
+        {{ rows().length }} quotation{{ rows().length === 1 ? '' : 's' }} @if (search()) { for “{{
+        search() }}” }
+      </span>
+      <span class="documents-hint">Saved in this workspace</span>
+    </div>
+
+    @if (loadError()) {
+    <div class="ui-empty">
+      <strong>Quotations could not be loaded</strong>
+      <p>Check that the API is running, then reload this page.</p>
+    </div>
+    } @else if (loading() && rows().length === 0) {
+    <div class="ui-empty"><strong>Loading quotations…</strong></div>
+    } @else if (rows().length === 0) {
+    <div class="ui-empty">
+      <strong>No quotations yet</strong>
+      <p>Create your first quotation and it will appear here with a downloadable PDF.</p>
+      <a class="ui-btn ui-btn-primary" routerLink="/quotations/new">Create quotation</a>
+    </div>
+    } @else {
+    <div class="ui-table-wrap">
+      <table class="ui-table documents-table">
+        <thead>
+          <tr>
+            <th>Quotation</th>
+            <th>Recipient</th>
+            <th>Date</th>
+            <th>Valid until</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (doc of rows(); track doc.id) {
+          <tr data-testid="quotation-row">
+            <td>
+              <a class="doc-cell" [routerLink]="['/quotations', doc.id]">
+                <span class="kind-mark" aria-hidden="true">Q</span>
+                <span>
+                  <strong>{{ doc.number ?? 'Draft' }}</strong>
+                  <span class="ui-muted">Quotation</span>
+                </span>
+              </a>
+            </td>
+            <td>{{ doc.recipientName }}</td>
+            <td class="date-cell">{{ formatDate(doc.issueDate) }}</td>
+            <td class="date-cell">{{ formatDate(doc.validUntil) }}</td>
+            <td class="ui-money">{{ formatMoney(doc.total, doc.currency) }}</td>
+            <td>
+              <span [class]="statusClass(displayStatus(doc))"
+                >{{ statusLabel[displayStatus(doc)] }}</span
+              >
+            </td>
+            <td class="row-action">
+              <button
+                class="row-link"
+                type="button"
+                title="Download PDF"
+                [attr.aria-label]="'Download PDF for ' + (doc.number ?? 'quotation')"
+                (click)="download(doc)"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 4v11M8 11l4 4 4-4" />
+                  <path d="M5 19h14" />
+                </svg>
+              </button>
+              <a
+                class="row-link"
+                [routerLink]="['/quotations', doc.id]"
+                [attr.aria-label]="'Open ' + (doc.number ?? 'quotation')"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="m9 6 6 6-6 6" />
+                </svg>
+              </a>
+              @if (canDelete(doc)) {
+              <button
+                class="row-link row-link-danger"
+                type="button"
+                title="Delete quotation"
+                [attr.aria-label]="'Delete ' + (doc.number ?? 'quotation')"
+                (click)="remove(doc)"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"
+                  />
+                </svg>
+              </button>
+              }
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+  </section>
+</section>

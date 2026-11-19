@@ -1,0 +1,93 @@
+.back-link {
+  display: flex;
+  width: fit-content;
+}
+
+.feedback-main {
+  display: grid;
+  gap: 14px;
+}
+
+.feedback-card {
+  display: grid;
+  gap: 16px;
+  padding: 22px 24px;
+}
+
+.feedback-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.feedback-quote {
+  margin: 0;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  background: var(--surface-2, #f8fafc);
+  padding: 14px 16px;
+  color: var(--text);
+  font-size: 13.5px;
+  line-height: 1.65;
+  white-space: pre-line;
+}
+
+.feedback-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 20px;
+  margin: 0;
+}
+
+.feedback-facts div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.feedback-facts dt {
+  color: var(--faint);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.feedback-facts dd {
+  overflow: hidden;
+  margin: 0;
+  font-size: 12px;
+  text-overflow: ellipsis;
+}
+
+.source-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.source-tag svg {
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+}
+
+.resolution-card {
+  display: grid;
+  gap: 6px;
+  border-left: 3px solid #16a34a;
+  padding: 16px 20px;
+}
+
+.resolution-card p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+.resolution-card .ui-muted {
+  font-size: 10.5px;
+}
